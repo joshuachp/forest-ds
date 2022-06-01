@@ -83,6 +83,13 @@ impl<V> Tree<V> {
         }
     }
 
+    pub fn iter(&self) -> Iter<V> {
+        Iter {
+            index: self.ends.map(|(root, _)| root),
+            nodes: &self.nodes,
+        }
+    }
+
     pub fn iter_mut(&mut self) -> IterMut<V> {
         let nodes = self.nodes.iter_mut().map(|ref_mut| Some(ref_mut)).collect();
 
@@ -90,6 +97,16 @@ impl<V> Tree<V> {
             index: self.ends.map(|(root, _)| root),
             nodes,
         }
+    }
+}
+
+impl<'a, V> IntoIterator for &'a Tree<V> {
+    type Item = &'a V;
+
+    type IntoIter = Iter<'a, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
@@ -144,6 +161,33 @@ impl<'a, V> Iterator for IterMut<'a, V> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Iter<'a, V> {
+    index: Option<usize>,
+    nodes: &'a [Node<V>],
+}
+
+impl<'a, V> Iterator for Iter<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.index?;
+        let node = &self.nodes[index];
+
+        self.index = if let Some(child) = node.child {
+            Some(child)
+        } else if let Some(next) = node.next_sibling {
+            Some(next)
+        } else if let Some(parent) = node.parent {
+            self.nodes[parent].next_sibling
+        } else {
+            None
+        };
+
+        Some(&node.value)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::Tree;
@@ -153,7 +197,6 @@ mod test {
         let mut tree: Tree<i32> = Tree::new();
 
         for i in 0..10 {
-            dbg!(&tree);
             tree.append_child(i);
         }
     }
@@ -163,11 +206,23 @@ mod test {
         let mut tree: Tree<i32> = Tree::new();
 
         for i in 0..10 {
-            dbg!(&tree);
             tree.append_child(i);
         }
 
         for (i, v) in tree.into_iter().enumerate() {
+            assert_eq!(i as i32, *v);
+        }
+    }
+
+    #[test]
+    fn should_iter() {
+        let mut tree: Tree<i32> = Tree::new();
+
+        for i in 0..10 {
+            tree.append_child(i);
+        }
+
+        for (i, v) in tree.iter().enumerate() {
             assert_eq!(i as i32, *v);
         }
     }
