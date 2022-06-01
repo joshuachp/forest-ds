@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use forest::tree::Tree;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let size: usize = 100;
+    let size: usize = 1_000_000;
 
     c.bench_with_input(BenchmarkId::new("insertion", size), &size, |b, &s| {
         b.iter(|| {

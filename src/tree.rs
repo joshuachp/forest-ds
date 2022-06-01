@@ -14,11 +14,9 @@ pub struct Node<V> {
 }
 
 impl<V> Tree<V> {
+    #[must_use]
     pub fn new() -> Self {
-        Self {
-            ends: None,
-            nodes: Vec::new(),
-        }
+        Self::default()
     }
 
     fn new_root(&mut self, value: V) {
@@ -83,6 +81,7 @@ impl<V> Tree<V> {
         }
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<V> {
         Iter {
             index: self.ends.map(|(root, _)| root),
@@ -90,8 +89,9 @@ impl<V> Tree<V> {
         }
     }
 
+    #[must_use]
     pub fn into_iterator(self) -> IntoIter<V> {
-        let nodes = self.nodes.into_iter().map(|node| Some(node)).collect();
+        let nodes = self.nodes.into_iter().map(Some).collect();
 
         IntoIter {
             index: self.ends.map(|(root, _)| root),
@@ -99,12 +99,22 @@ impl<V> Tree<V> {
         }
     }
 
+    #[must_use]
     pub fn iter_mut(&mut self) -> IterMut<V> {
-        let nodes = self.nodes.iter_mut().map(|ref_mut| Some(ref_mut)).collect();
+        let nodes = self.nodes.iter_mut().map(Some).collect();
 
         IterMut {
             index: self.ends.map(|(root, _)| root),
             nodes,
+        }
+    }
+}
+
+impl<V> Default for Tree<V> {
+    fn default() -> Self {
+        Self {
+            ends: None,
+            nodes: Vec::new(),
         }
     }
 }
@@ -140,7 +150,7 @@ impl<'a, V> IntoIterator for &'a mut Tree<V> {
 }
 
 impl<V> Node<V> {
-    pub fn new(value: V) -> Self {
+    pub const fn new(value: V) -> Self {
         Self {
             parent: None,
             child: None,
