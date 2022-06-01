@@ -1,15 +1,15 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-
-fn fibonacci(n: u64) -> u64 {
-    match n {
-        0 => 1,
-        1 => 1,
-        n => fibonacci(n - 1) + fibonacci(n - 2),
-    }
-}
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use forest::tree::Tree;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("fib 20", |b| b.iter(|| fibonacci(black_box(20))));
+    let size: usize = 100;
+
+    c.bench_with_input(BenchmarkId::new("insertion", size), &size, |b, &s| {
+        b.iter(|| {
+            let mut tree = Tree::new();
+            (0..s).for_each(|i| tree.append_child(i));
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
