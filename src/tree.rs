@@ -90,6 +90,15 @@ impl<V> Tree<V> {
         }
     }
 
+    pub fn into_iterator(self) -> IntoIter<V> {
+        let nodes = self.nodes.into_iter().map(|node| Some(node)).collect();
+
+        IntoIter {
+            index: self.ends.map(|(root, _)| root),
+            nodes,
+        }
+    }
+
     pub fn iter_mut(&mut self) -> IterMut<V> {
         let nodes = self.nodes.iter_mut().map(|ref_mut| Some(ref_mut)).collect();
 
@@ -107,6 +116,16 @@ impl<'a, V> IntoIterator for &'a Tree<V> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
+    }
+}
+
+impl<V> IntoIterator for Tree<V> {
+    type Item = V;
+
+    type IntoIter = IntoIter<V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.into_iterator()
     }
 }
 
@@ -129,6 +148,62 @@ impl<V> Node<V> {
             next_sibling: None,
             value,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Iter<'a, V> {
+    index: Option<usize>,
+    nodes: &'a [Node<V>],
+}
+
+impl<'a, V> Iterator for Iter<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.index?;
+        let node = &self.nodes[index];
+
+        self.index = if let Some(child) = node.child {
+            Some(child)
+        } else if let Some(next) = node.next_sibling {
+            Some(next)
+        } else if let Some(parent) = node.parent {
+            self.nodes[parent].next_sibling
+        } else {
+            None
+        };
+
+        Some(&node.value)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IntoIter<V> {
+    index: Option<usize>,
+    nodes: Vec<Option<Node<V>>>,
+}
+
+impl<V> Iterator for IntoIter<V> {
+    type Item = V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.index?;
+        self.nodes[index].take().map(|node| {
+            if let Some(child) = node.child {
+                self.index = Some(child);
+            } else if let Some(next) = node.next_sibling {
+                self.index = Some(next);
+            } else if let Some(parent) = node.parent {
+                self.index = self.nodes[parent]
+                    .as_ref()
+                    .and_then(|parent| parent.next_sibling);
+            } else {
+                self.index = None;
+            }
+
+            node.value
+        })
     }
 }
 
@@ -161,33 +236,6 @@ impl<'a, V> Iterator for IterMut<'a, V> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Iter<'a, V> {
-    index: Option<usize>,
-    nodes: &'a [Node<V>],
-}
-
-impl<'a, V> Iterator for Iter<'a, V> {
-    type Item = &'a V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        let node = &self.nodes[index];
-
-        self.index = if let Some(child) = node.child {
-            Some(child)
-        } else if let Some(next) = node.next_sibling {
-            Some(next)
-        } else if let Some(parent) = node.parent {
-            self.nodes[parent].next_sibling
-        } else {
-            None
-        };
-
-        Some(&node.value)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::Tree;
@@ -202,19 +250,6 @@ mod test {
     }
 
     #[test]
-    fn should_iter_mut() {
-        let mut tree: Tree<i32> = Tree::new();
-
-        for i in 0..10 {
-            tree.append_child(i);
-        }
-
-        for (i, v) in tree.into_iter().enumerate() {
-            assert_eq!(i as i32, *v);
-        }
-    }
-
-    #[test]
     fn should_iter() {
         let mut tree: Tree<i32> = Tree::new();
 
@@ -223,6 +258,32 @@ mod test {
         }
 
         for (i, v) in tree.iter().enumerate() {
+            assert_eq!(i as i32, *v);
+        }
+    }
+
+    #[test]
+    fn should_into_iter() {
+        let mut tree: Tree<i32> = Tree::new();
+
+        for i in 0..10 {
+            tree.append_child(i);
+        }
+
+        for (i, v) in tree.into_iterator().enumerate() {
+            assert_eq!(i as i32, v);
+        }
+    }
+
+    #[test]
+    fn should_iter_mut() {
+        let mut tree: Tree<i32> = Tree::new();
+
+        for i in 0..10 {
+            tree.append_child(i);
+        }
+
+        for (i, v) in tree.iter_mut().enumerate() {
             assert_eq!(i as i32, *v);
         }
     }
