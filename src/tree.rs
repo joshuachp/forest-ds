@@ -1,13 +1,15 @@
 #[derive(Debug, Clone)]
 pub struct Tree<V> {
-    ends: Option<(usize, usize)>,
+    root: Option<usize>,
+    tail: Option<usize>,
     nodes: Vec<Node<V>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Node<V> {
     parent: Option<usize>,
-    child: Option<usize>,
+    first_child: Option<usize>,
+    last_child: Option<usize>,
     prev_sibling: Option<usize>,
     next_sibling: Option<usize>,
     value: V,
@@ -19,9 +21,11 @@ impl<V> Tree<V> {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            ends: None,
+            root: None,
+            tail: None,
             nodes: Vec::with_capacity(capacity),
         }
     }
@@ -29,29 +33,21 @@ impl<V> Tree<V> {
     fn new_root(&mut self, value: V) {
         let root = Node::new(value);
 
-        let root_index = self.nodes.len();
-        self.ends = Some((root_index, root_index));
+        let root_index = Some(self.nodes.len());
+        self.root = root_index;
+        self.tail = root_index;
 
         self.nodes.push(root);
-    }
-
-    fn next_sibling(&self, index: usize) -> Option<usize> {
-        self.nodes.get(index).and_then(|node| node.next_sibling)
     }
 
     fn set_sibling(&mut self, index: usize, value: V) -> usize {
         let mut node = Node::new(value);
         let node_index = self.nodes.len();
 
-        let mut sibling_index = index;
-        while let Some(next) = self.next_sibling(sibling_index) {
-            sibling_index = next;
-        }
-
-        let sibling = &mut self.nodes[sibling_index];
+        let sibling = &mut self.nodes[index];
         sibling.next_sibling = Some(node_index);
 
-        node.prev_sibling = Some(sibling_index);
+        node.prev_sibling = Some(index);
         node.parent = sibling.parent;
 
         node_index
@@ -61,29 +57,27 @@ impl<V> Tree<V> {
         let child_index = self.nodes.len();
         let parent = &mut self.nodes[index];
 
-        match parent.child {
-            Some(sibling) => {
-                return self.set_sibling(sibling, value);
-            }
+        match parent.last_child {
+            Some(sibling) => self.set_sibling(sibling, value),
             None => {
                 let mut child = Node::new(value);
 
-                parent.child = Some(child_index);
+                parent.last_child = Some(child_index);
                 child.parent = Some(index);
 
                 self.nodes.push(child);
+                child_index
             }
         }
-        child_index
     }
 
     pub fn append_child(&mut self, value: V) {
-        match self.ends {
+        match self.tail {
             None => self.new_root(value),
-            Some((root, tail)) => {
+            Some(tail) => {
                 let child_index = self.set_child(tail, value);
 
-                self.ends = Some((root, child_index));
+                self.tail = Some(child_index);
             }
         }
     }
@@ -91,7 +85,7 @@ impl<V> Tree<V> {
     #[must_use]
     pub fn iter(&self) -> Iter<V> {
         Iter {
-            index: self.ends.map(|(root, _)| root),
+            index: self.root,
             nodes: &self.nodes,
         }
     }
@@ -101,7 +95,7 @@ impl<V> Tree<V> {
         let nodes = self.nodes.into_iter().map(Some).collect();
 
         IntoIter {
-            index: self.ends.map(|(root, _)| root),
+            index: self.root,
             nodes,
         }
     }
@@ -111,7 +105,7 @@ impl<V> Tree<V> {
         let nodes = self.nodes.iter_mut().map(Some).collect();
 
         IterMut {
-            index: self.ends.map(|(root, _)| root),
+            index: self.root,
             nodes,
         }
     }
@@ -120,7 +114,8 @@ impl<V> Tree<V> {
 impl<V> Default for Tree<V> {
     fn default() -> Self {
         Self {
-            ends: None,
+            root: None,
+            tail: None,
             nodes: Vec::new(),
         }
     }
@@ -160,7 +155,8 @@ impl<V> Node<V> {
     pub const fn new(value: V) -> Self {
         Self {
             parent: None,
-            child: None,
+            first_child: None,
+            last_child: None,
             prev_sibling: None,
             next_sibling: None,
             value,
@@ -181,7 +177,7 @@ impl<'a, V> Iterator for Iter<'a, V> {
         let index = self.index?;
         let node = &self.nodes[index];
 
-        self.index = if let Some(child) = node.child {
+        self.index = if let Some(child) = node.first_child {
             Some(child)
         } else if let Some(next) = node.next_sibling {
             Some(next)
@@ -207,7 +203,7 @@ impl<V> Iterator for IntoIter<V> {
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.index?;
         self.nodes[index].take().map(|node| {
-            if let Some(child) = node.child {
+            if let Some(child) = node.first_child {
                 self.index = Some(child);
             } else if let Some(next) = node.next_sibling {
                 self.index = Some(next);
@@ -236,7 +232,7 @@ impl<'a, V> Iterator for IterMut<'a, V> {
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.index?;
         self.nodes[index].take().map(|node| {
-            if let Some(child) = node.child {
+            if let Some(child) = node.first_child {
                 self.index = Some(child);
             } else if let Some(next) = node.next_sibling {
                 self.index = Some(next);
