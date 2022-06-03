@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 #[derive(Debug, Clone)]
 pub struct Tree<V> {
     root: Option<usize>,
@@ -33,9 +35,9 @@ impl<V> Tree<V> {
     fn new_root(&mut self, value: V) {
         let root = Node::new(value);
 
-        let root_index = Some(self.nodes.len());
-        self.root = root_index;
-        self.tail = root_index;
+        let root_index = self.nodes.len();
+        self.root = Some(root_index);
+        self.tail = Some(root_index);
 
         self.nodes.push(root);
     }
@@ -49,6 +51,16 @@ impl<V> Tree<V> {
 
         node.prev_sibling = Some(index);
         node.parent = sibling.parent;
+
+        match sibling.parent {
+            Some(parent) => {
+                let mut parent = &mut self.nodes[parent];
+                parent.last_child = Some(node_index);
+            }
+            None => {}
+        }
+
+        self.nodes.push(node);
 
         node_index
     }
@@ -76,6 +88,17 @@ impl<V> Tree<V> {
             None => self.new_root(value),
             Some(tail) => {
                 let child_index = self.set_child(tail, value);
+
+                self.tail = Some(child_index);
+            }
+        }
+    }
+
+    pub fn append_sibling(&mut self, value: V) {
+        match self.tail {
+            None => self.new_root(value),
+            Some(tail) => {
+                let child_index = self.set_sibling(tail, value);
 
                 self.tail = Some(child_index);
             }
@@ -259,6 +282,15 @@ mod test {
 
         for i in 0..10 {
             tree.append_child(i);
+        }
+    }
+
+    #[test]
+    fn should_append_sibling() {
+        let mut tree: Tree<i32> = Tree::new();
+
+        for i in 0..10 {
+            tree.append_sibling(i);
         }
     }
 
