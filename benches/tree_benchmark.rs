@@ -46,6 +46,34 @@ fn criterion_benchmark(c: &mut Criterion) {
             sum
         });
     });
+
+    c.bench_with_input(BenchmarkId::new("iterate_mut", size), &size, move |b, s| {
+        b.iter(|| {
+            let size = *s;
+            let mut tree = Tree::with_capacity(size);
+            (0..size).for_each(|i| tree.append_child(i));
+
+            for v in tree.iter_mut() {
+                *v += 1;
+            }
+        });
+    });
+
+    c.bench_with_input(
+        BenchmarkId::new("iterate_into_iter", size),
+        &size,
+        move |b, s| {
+            b.iter(|| {
+                let size = *s;
+                let mut tree = Tree::with_capacity(size);
+                (0..size).for_each(|i| tree.append_child(i));
+
+                for mut v in tree.into_iterator() {
+                    v += 1;
+                }
+            });
+        },
+    );
 }
 
 criterion_group!(benches, criterion_benchmark);
