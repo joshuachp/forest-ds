@@ -19,6 +19,13 @@ impl<V> Tree<V> {
         Self::default()
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            ends: None,
+            nodes: Vec::with_capacity(capacity),
+        }
+    }
+
     fn new_root(&mut self, value: V) {
         let root = Node::new(value);
 
