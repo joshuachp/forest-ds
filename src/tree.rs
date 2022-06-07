@@ -1,20 +1,15 @@
 use std::fmt::Debug;
 
-#[derive(Debug, Clone)]
-pub struct Tree<V> {
-    root: Option<usize>,
-    tail: Option<usize>,
-    nodes: Vec<Node<V>>,
-}
+use crate::{
+    iter::{IntoIter, Iter, IterMut},
+    node::Node,
+};
 
 #[derive(Debug, Clone)]
-pub struct Node<V> {
-    parent: Option<usize>,
-    first_child: Option<usize>,
-    last_child: Option<usize>,
-    prev_sibling: Option<usize>,
-    next_sibling: Option<usize>,
-    value: V,
+pub struct Tree<T> {
+    root: Option<usize>,
+    tail: Option<usize>,
+    nodes: Vec<Node<T>>,
 }
 
 impl<V> Tree<V> {
@@ -144,36 +139,6 @@ impl<V> Default for Tree<V> {
     }
 }
 
-impl<'a, V> IntoIterator for &'a Tree<V> {
-    type Item = &'a V;
-
-    type IntoIter = Iter<'a, V>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
-
-impl<V> IntoIterator for Tree<V> {
-    type Item = V;
-
-    type IntoIter = IntoIter<V>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.into_iterator()
-    }
-}
-
-impl<'a, V> IntoIterator for &'a mut Tree<V> {
-    type Item = &'a mut V;
-
-    type IntoIter = IterMut<'a, V>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
-    }
-}
-
 impl<V> Node<V> {
     pub const fn new(value: V) -> Self {
         Self {
@@ -184,91 +149,6 @@ impl<V> Node<V> {
             next_sibling: None,
             value,
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Iter<'a, V> {
-    index: Option<usize>,
-    nodes: &'a [Node<V>],
-}
-
-impl<'a, V> Iterator for Iter<'a, V> {
-    type Item = &'a V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        let node = &self.nodes[index];
-
-        self.index = if let Some(child) = node.first_child {
-            Some(child)
-        } else if let Some(next) = node.next_sibling {
-            Some(next)
-        } else if let Some(parent) = node.parent {
-            self.nodes[parent].next_sibling
-        } else {
-            None
-        };
-
-        Some(&node.value)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct IntoIter<V> {
-    index: Option<usize>,
-    nodes: Vec<Option<Node<V>>>,
-}
-
-impl<V> Iterator for IntoIter<V> {
-    type Item = V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        self.nodes[index].take().map(|node| {
-            if let Some(child) = node.first_child {
-                self.index = Some(child);
-            } else if let Some(next) = node.next_sibling {
-                self.index = Some(next);
-            } else if let Some(parent) = node.parent {
-                self.index = self.nodes[parent]
-                    .as_ref()
-                    .and_then(|parent| parent.next_sibling);
-            } else {
-                self.index = None;
-            }
-
-            node.value
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct IterMut<'a, V> {
-    index: Option<usize>,
-    nodes: Vec<Option<&'a mut Node<V>>>,
-}
-
-impl<'a, V> Iterator for IterMut<'a, V> {
-    type Item = &'a mut V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        self.nodes[index].take().map(|node| {
-            if let Some(child) = node.first_child {
-                self.index = Some(child);
-            } else if let Some(next) = node.next_sibling {
-                self.index = Some(next);
-            } else if let Some(parent) = node.parent {
-                self.index = self.nodes[parent]
-                    .as_ref()
-                    .and_then(|parent| parent.next_sibling);
-            } else {
-                self.index = None;
-            }
-
-            &mut node.value
-        })
     }
 }
 
