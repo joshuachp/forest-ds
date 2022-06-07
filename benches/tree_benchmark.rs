@@ -68,9 +68,13 @@ fn criterion_benchmark(c: &mut Criterion) {
                 let mut tree = Tree::with_capacity(size);
                 (0..size).for_each(|i| tree.append_child(i));
 
+                let mut sum = 0;
                 for mut v in tree.into_iterator() {
                     v += 1;
+                    sum += v;
                 }
+
+                sum
             });
         },
     );
