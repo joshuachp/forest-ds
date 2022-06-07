@@ -139,19 +139,6 @@ impl<V> Default for Tree<V> {
     }
 }
 
-impl<V> Node<V> {
-    pub const fn new(value: V) -> Self {
-        Self {
-            parent: None,
-            first_child: None,
-            last_child: None,
-            prev_sibling: None,
-            next_sibling: None,
-            value,
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::Tree;
