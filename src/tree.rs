@@ -1,24 +1,17 @@
-use std::fmt::Debug;
+use crate::node::Node;
 
-use crate::{
-    iter::{IntoIter, Iter, IterMut},
-    node::Node,
-};
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Tree<T> {
-    root: Option<usize>,
-    tail: Option<usize>,
-    nodes: Vec<Node<T>>,
+    pub(crate) root: Option<usize>,
+    pub(crate) tail: Option<usize>,
+    pub(crate) nodes: Vec<Node<T>>,
 }
 
-impl<V> Tree<V> {
-    #[must_use]
+impl<T> Tree<T> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             root: None,
@@ -27,176 +20,189 @@ impl<V> Tree<V> {
         }
     }
 
-    fn new_root(&mut self, value: V) {
-        let root = Node::new(value);
+    /// Appends the value to the last element of the three as its child. If None creates a new root.
+    pub fn append_child(&mut self, value: T) {
+        match self.tail {
+            Some(tail_index) => {
+                let node_index = self.nodes.len();
+                let mut node = Node::new(value);
+                node.parent = Some(tail_index);
 
-        let root_index = self.nodes.len();
-        self.root = Some(root_index);
-        self.tail = Some(root_index);
+                self.tail = Some(node_index);
 
-        self.nodes.push(root);
-    }
+                let tail = &mut self.nodes[tail_index];
 
-    fn set_sibling(&mut self, index: usize, value: V) -> usize {
-        let mut node = Node::new(value);
-        let node_index = self.nodes.len();
+                let last_child = tail.last_child.replace(node_index);
 
-        let sibling = &mut self.nodes[index];
-        sibling.next_sibling = Some(node_index);
+                match last_child {
+                    Some(sibling_index) => {
+                        let sibling = &mut self.nodes[sibling_index];
+                        sibling.next_sibling = Some(node_index);
+                        node.prev_sibling = Some(sibling_index);
+                    }
+                    None => {
+                        tail.first_child = Some(node_index);
+                        tail.last_child = Some(node_index);
+                    }
+                }
 
-        node.prev_sibling = Some(index);
-        node.parent = sibling.parent;
-
-        match sibling.parent {
-            Some(parent) => {
-                let mut parent = &mut self.nodes[parent];
-                parent.last_child = Some(node_index);
+                self.nodes.push(node);
             }
-            None => {}
-        }
-
-        self.nodes.push(node);
-
-        node_index
-    }
-
-    fn set_child(&mut self, index: usize, value: V) -> usize {
-        let child_index = self.nodes.len();
-        let parent = &mut self.nodes[index];
-
-        match parent.last_child {
-            Some(sibling) => self.set_sibling(sibling, value),
             None => {
-                let mut child = Node::new(value);
-
-                parent.last_child = Some(child_index);
-                child.parent = Some(index);
-
-                self.nodes.push(child);
-                child_index
+                // The tree must be empty, since we don't have a tail node. We can just push a new
+                // Node and set the root and tail to 0.
+                self.nodes.push(Node::new(value));
+                self.root = Some(0);
+                self.tail = Some(0);
             }
         }
     }
 
-    pub fn append_child(&mut self, value: V) {
+    /// Appends the value to the last element of the three as its sibling. If None creates a new
+    /// root.
+    pub fn append_sibling(&mut self, value: T) {
         match self.tail {
-            None => self.new_root(value),
-            Some(tail) => {
-                let child_index = self.set_child(tail, value);
+            Some(tail_index) => {
+                let node_index = self.nodes.len();
+                let mut node = Node::new(value);
+                node.prev_sibling = Some(tail_index);
 
-                self.tail = Some(child_index);
+                let tail = &mut self.nodes[tail_index];
+                tail.next_sibling = Some(node_index);
+
+                node.parent = tail.parent;
+
+                self.tail = Some(node_index);
+                self.nodes.push(node);
             }
-        }
-    }
-
-    pub fn append_sibling(&mut self, value: V) {
-        match self.tail {
-            None => self.new_root(value),
-            Some(tail) => {
-                let child_index = self.set_sibling(tail, value);
-
-                self.tail = Some(child_index);
+            None => {
+                // The tree must be empty, since we don't have a tail node. We can just push a new
+                // Node and set the root and tail to 0.
+                self.nodes.push(Node::new(value));
+                self.root = Some(0);
+                self.tail = Some(0);
             }
-        }
-    }
-
-    #[must_use]
-    pub fn iter(&self) -> Iter<V> {
-        Iter {
-            index: self.root,
-            nodes: &self.nodes,
-        }
-    }
-
-    #[must_use]
-    pub fn into_iterator(self) -> IntoIter<V> {
-        let nodes = self.nodes.into_iter().map(Some).collect();
-
-        IntoIter {
-            index: self.root,
-            nodes,
-        }
-    }
-
-    #[must_use]
-    pub fn iter_mut(&mut self) -> IterMut<V> {
-        let nodes = self.nodes.iter_mut().map(Some).collect();
-
-        IterMut {
-            index: self.root,
-            nodes,
         }
     }
 }
 
-impl<V> Default for Tree<V> {
+impl<T> Default for Tree<T> {
     fn default() -> Self {
         Self {
-            root: None,
-            tail: None,
-            nodes: Vec::new(),
+            root: Default::default(),
+            tail: Default::default(),
+            nodes: Default::default(),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::node::Node;
+
     use super::Tree;
 
     #[test]
-    fn should_append_child() {
+    pub fn should_create_root_on_append_child() {
         let mut tree: Tree<i32> = Tree::new();
+        tree.append_child(42);
 
-        for i in 0..10 {
-            tree.append_child(i);
-        }
+        assert_eq!(Some(0), tree.root);
+        assert_eq!(Some(0), tree.tail);
+
+        let node = Node {
+            value: 42,
+            parent: None,
+            first_child: None,
+            last_child: None,
+            next_sibling: None,
+            prev_sibling: None,
+        };
+
+        assert_eq!(node, tree.nodes[0]);
     }
 
     #[test]
-    fn should_append_sibling() {
+    pub fn should_append_child() {
         let mut tree: Tree<i32> = Tree::new();
+        tree.append_child(1);
+        tree.append_child(2);
 
-        for i in 0..10 {
-            tree.append_sibling(i);
-        }
+        assert_eq!(Some(0), tree.root);
+        assert_eq!(Some(1), tree.tail);
+
+        let first = Node {
+            value: 1,
+            parent: None,
+            first_child: Some(1),
+            last_child: Some(1),
+            next_sibling: None,
+            prev_sibling: None,
+        };
+
+        assert_eq!(first, tree.nodes[0]);
+
+        let second = Node {
+            value: 2,
+            parent: Some(0),
+            first_child: None,
+            last_child: None,
+            next_sibling: None,
+            prev_sibling: None,
+        };
+
+        assert_eq!(second, tree.nodes[1]);
     }
 
     #[test]
-    fn should_iter() {
+    pub fn should_create_root_on_append_sibling() {
         let mut tree: Tree<i32> = Tree::new();
+        tree.append_sibling(42);
 
-        for i in 0..10 {
-            tree.append_child(i);
-        }
+        assert_eq!(Some(0), tree.root);
+        assert_eq!(Some(0), tree.tail);
 
-        for (i, v) in tree.iter().enumerate() {
-            assert_eq!(i as i32, *v);
-        }
+        let node = Node {
+            value: 42,
+            parent: None,
+            first_child: None,
+            last_child: None,
+            next_sibling: None,
+            prev_sibling: None,
+        };
+
+        assert_eq!(node, tree.nodes[0]);
     }
 
     #[test]
-    fn should_into_iter() {
+    pub fn should_append_sibling() {
         let mut tree: Tree<i32> = Tree::new();
+        tree.append_sibling(1);
+        tree.append_sibling(2);
 
-        for i in 0..10 {
-            tree.append_child(i);
-        }
+        assert_eq!(Some(0), tree.root);
+        assert_eq!(Some(1), tree.tail);
 
-        for (i, v) in tree.into_iterator().enumerate() {
-            assert_eq!(i as i32, v);
-        }
-    }
+        let first = Node {
+            value: 1,
+            parent: None,
+            first_child: None,
+            last_child: None,
+            next_sibling: Some(1),
+            prev_sibling: None,
+        };
 
-    #[test]
-    fn should_iter_mut() {
-        let mut tree: Tree<i32> = Tree::new();
+        assert_eq!(first, tree.nodes[0]);
 
-        for i in 0..10 {
-            tree.append_child(i);
-        }
+        let second = Node {
+            value: 2,
+            parent: None,
+            first_child: None,
+            last_child: None,
+            next_sibling: None,
+            prev_sibling: Some(0),
+        };
 
-        for (i, v) in tree.iter_mut().enumerate() {
-            assert_eq!(i as i32, *v);
-        }
+        assert_eq!(second, tree.nodes[1]);
     }
 }

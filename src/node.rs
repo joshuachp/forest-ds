@@ -1,22 +1,36 @@
-#[derive(Debug, Clone)]
-pub struct Node<T> {
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Node<T> {
+    pub(crate) value: T,
+
     pub(crate) parent: Option<usize>,
-    pub(crate) first_child: Option<usize>,
-    pub(crate) last_child: Option<usize>,
     pub(crate) prev_sibling: Option<usize>,
     pub(crate) next_sibling: Option<usize>,
-    pub(crate) value: T,
+    pub(crate) first_child: Option<usize>,
+    pub(crate) last_child: Option<usize>,
 }
 
-impl<V> Node<V> {
-    pub(crate) const fn new(value: V) -> Self {
+impl<T> Node<T> {
+    pub(crate) fn new(value: T) -> Self {
         Self {
+            value,
             parent: None,
-            first_child: None,
-            last_child: None,
             prev_sibling: None,
             next_sibling: None,
-            value,
+            first_child: None,
+            last_child: None,
+        }
+    }
+}
+
+impl<T: Default> Default for Node<T> {
+    fn default() -> Self {
+        Self {
+            value: Default::default(),
+            parent: Default::default(),
+            prev_sibling: Default::default(),
+            next_sibling: Default::default(),
+            first_child: Default::default(),
+            last_child: Default::default(),
         }
     }
 }
