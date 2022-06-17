@@ -20,33 +20,54 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Insert the last child for a given index.
+    fn insert_child(&mut self, index: usize, value: T) {
+        let node_index = self.nodes.len();
+        let mut node = Node::new(value);
+        node.parent = Some(index);
+
+        self.tail = Some(node_index);
+
+        let tail = &mut self.nodes[index];
+
+        let last_child = tail.last_child.replace(node_index);
+
+        match last_child {
+            Some(sibling_index) => {
+                let sibling = &mut self.nodes[sibling_index];
+                sibling.next_sibling = Some(node_index);
+                node.prev_sibling = Some(sibling_index);
+            }
+            None => {
+                tail.first_child = Some(node_index);
+                tail.last_child = Some(node_index);
+            }
+        }
+
+        self.nodes.push(node);
+    }
+
+    /// Insert the next sibling for a given index.
+    fn insert_sibling(&mut self, index: usize, value: T) {
+        let node_index = self.nodes.len();
+        let mut node = Node::new(value);
+        node.prev_sibling = Some(index);
+
+        let tail = &mut self.nodes[index];
+        let next_sibling = tail.next_sibling.replace(node_index);
+
+        node.next_sibling = next_sibling;
+        node.parent = tail.parent;
+
+        self.tail = Some(node_index);
+        self.nodes.push(node);
+    }
+
     /// Appends the value to the last element of the three as its child. If None creates a new root.
     pub fn append_child(&mut self, value: T) {
         match self.tail {
             Some(tail_index) => {
-                let node_index = self.nodes.len();
-                let mut node = Node::new(value);
-                node.parent = Some(tail_index);
-
-                self.tail = Some(node_index);
-
-                let tail = &mut self.nodes[tail_index];
-
-                let last_child = tail.last_child.replace(node_index);
-
-                match last_child {
-                    Some(sibling_index) => {
-                        let sibling = &mut self.nodes[sibling_index];
-                        sibling.next_sibling = Some(node_index);
-                        node.prev_sibling = Some(sibling_index);
-                    }
-                    None => {
-                        tail.first_child = Some(node_index);
-                        tail.last_child = Some(node_index);
-                    }
-                }
-
-                self.nodes.push(node);
+                self.insert_child(tail_index, value);
             }
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
@@ -62,19 +83,7 @@ impl<T> Tree<T> {
     /// root.
     pub fn append_sibling(&mut self, value: T) {
         match self.tail {
-            Some(tail_index) => {
-                let node_index = self.nodes.len();
-                let mut node = Node::new(value);
-                node.prev_sibling = Some(tail_index);
-
-                let tail = &mut self.nodes[tail_index];
-                tail.next_sibling = Some(node_index);
-
-                node.parent = tail.parent;
-
-                self.tail = Some(node_index);
-                self.nodes.push(node);
-            }
+            Some(tail_index) => self.insert_sibling(tail_index, value),
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
                 // Node and set the root and tail to 0.
