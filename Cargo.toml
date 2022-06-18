@@ -2,9 +2,9 @@
 name = "forest-ds"
 description = "Implementation of a secure tree structure."
 repository = "https://github.com/joshuachp/forest-ds"
-keywords = ["data-structure"]
-categories = ["data-structure"]
-version = "0.1.0"
+keywords = ["data-structures", "trees"]
+categories = ["data-structures"]
+version = "0.1.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
