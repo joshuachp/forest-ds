@@ -109,7 +109,8 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
-    /// Check that a [NodeId] exists.
+    /// Check that a `NodeId` exists.
+    #[must_use]
     pub fn check_id(&self, id: &NodeId) -> bool {
         self.nodes.len() > id.index
     }
@@ -125,7 +126,7 @@ impl<T> Tree<T> {
     }
 
     pub fn insert_sibling(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
-        if !self.check_id(&id) {
+        if !self.check_id(id) {
             return None;
         }
 
