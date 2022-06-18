@@ -10,7 +10,7 @@ pub(crate) struct Node<T> {
 }
 
 impl<T> Node<T> {
-    pub(crate) fn new(value: T) -> Self {
+    pub(crate) const fn new(value: T) -> Self {
         Self {
             value,
             parent: None,
@@ -26,11 +26,11 @@ impl<T: Default> Default for Node<T> {
     fn default() -> Self {
         Self {
             value: Default::default(),
-            parent: Default::default(),
-            prev_sibling: Default::default(),
-            next_sibling: Default::default(),
-            first_child: Default::default(),
-            last_child: Default::default(),
+            parent: Option::default(),
+            prev_sibling: Option::default(),
+            next_sibling: Option::default(),
+            first_child: Option::default(),
+            last_child: Option::default(),
         }
     }
 }

@@ -1,6 +1,7 @@
 use crate::{node::Node, tree::Tree};
 
 impl<T> Tree<T> {
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         Iter {
             current: self.root,
@@ -33,7 +34,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
             let node = &self.nodes[current];
 
             if let Some(child) = node.first_child {
-                self.current = Some(child)
+                self.current = Some(child);
             } else if let Some(sibling) = node.next_sibling {
                 self.current = Some(sibling);
             } else {

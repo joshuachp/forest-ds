@@ -8,10 +8,12 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             root: None,
@@ -98,9 +100,9 @@ impl<T> Tree<T> {
 impl<T> Default for Tree<T> {
     fn default() -> Self {
         Self {
-            root: Default::default(),
-            tail: Default::default(),
-            nodes: Default::default(),
+            root: Option::default(),
+            tail: Option::default(),
+            nodes: Vec::default(),
         }
     }
 }
