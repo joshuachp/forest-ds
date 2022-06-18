@@ -2,7 +2,7 @@
 name = "forest"
 description = "Forest is a collection of tests for a secure tree structure."
 repository = "https://github.com/joshuachp/forest"
-keywords = ["tree", "data-structure"]
+keywords = ["data-structure"]
 categories = ["data-structure"]
 version = "0.1.0"
 edition = "2021"
