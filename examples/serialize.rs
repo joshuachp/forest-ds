@@ -1,4 +1,4 @@
-use forest::tree::Tree;
+use forest_ds::tree::Tree;
 
 fn main() {
     let mut tree = Tree::new();

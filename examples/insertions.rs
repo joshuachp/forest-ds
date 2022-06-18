@@ -1,4 +1,4 @@
-use forest::tree::Tree;
+use forest_ds::tree::Tree;
 
 const SIZE: i64 = 10000000;
 
