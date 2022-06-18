@@ -1,0 +1,23 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose    - name: Publish crate
+      - name: Publish crate
+        run: cargo publish --verbose --frozen
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
