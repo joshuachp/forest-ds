@@ -1,3 +1,3 @@
-# forest
+# forest-ds
 
-Testing trees implementations
+Tree data structure implementation.
