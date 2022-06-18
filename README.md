@@ -1,6 +1,6 @@
 # forest-ds
 
-Implementing an arena based Tree structure.
+Implementation an arena based Tree structure.
 
 Implemented features:
 
