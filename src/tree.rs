@@ -130,7 +130,7 @@ impl<T> Tree<T> {
             return None;
         }
 
-        let index = self.insert_child_at(id.index, value);
+        let index = self.insert_sibling_at(id.index, value);
 
         Some(NodeId { index })
     }
