@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::{id::NodeId, node::Node};
 
 #[derive(Debug)]
 pub struct Tree<T> {
@@ -25,7 +25,7 @@ impl<T> Tree<T> {
     }
 
     /// Insert the last child for a given index.
-    fn insert_child(&mut self, index: usize, value: T) {
+    fn insert_child_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.parent = Some(index);
@@ -49,10 +49,12 @@ impl<T> Tree<T> {
         }
 
         self.nodes.push(node);
+
+        node_index
     }
 
     /// Insert the next sibling for a given index.
-    fn insert_sibling(&mut self, index: usize, value: T) {
+    fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.prev_sibling = Some(index);
@@ -65,37 +67,71 @@ impl<T> Tree<T> {
 
         self.tail = Some(node_index);
         self.nodes.push(node);
+
+        node_index
     }
 
     /// Appends the value to the last element of the three as its child. If None creates a new root.
-    pub fn append_child(&mut self, value: T) {
-        match self.tail {
-            Some(tail_index) => {
-                self.insert_child(tail_index, value);
-            }
+    pub fn append_child(&mut self, value: T) -> NodeId {
+        let index = match self.tail {
+            Some(tail_index) => self.insert_child_at(tail_index, value),
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
                 // Node and set the root and tail to 0.
                 self.nodes.push(Node::new(value));
                 self.root = Some(0);
                 self.tail = Some(0);
+
+                0
             }
-        }
+        };
+
+        NodeId { index }
     }
 
     /// Appends the value to the last element of the three as its sibling. If None creates a new
     /// root.
-    pub fn append_sibling(&mut self, value: T) {
-        match self.tail {
-            Some(tail_index) => self.insert_sibling(tail_index, value),
+    pub fn append_sibling(&mut self, value: T) -> NodeId {
+        let index = match self.tail {
+            Some(tail_index) => self.insert_sibling_at(tail_index, value),
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
                 // Node and set the root and tail to 0.
+                const ROOT_INDEX: usize = 0;
                 self.nodes.push(Node::new(value));
-                self.root = Some(0);
-                self.tail = Some(0);
+                self.root = Some(ROOT_INDEX);
+                self.tail = Some(ROOT_INDEX);
+
+                ROOT_INDEX
             }
+        };
+
+        NodeId { index }
+    }
+
+    /// Check that a [NodeId] exists.
+    pub fn check_id(&self, id: &NodeId) -> bool {
+        self.nodes.len() > id.index
+    }
+
+    pub fn insert_child(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
+        if !self.check_id(id) {
+            return None;
         }
+
+        let index = self.insert_child_at(id.index, value);
+
+        Some(NodeId { index })
+    }
+
+    pub fn insert_sibling(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
+        if !self.check_id(&id) {
+            return None;
+        }
+
+        let index = self.insert_child_at(id.index, value);
+
+        Some(NodeId { index })
     }
 }
 
@@ -217,5 +253,14 @@ mod test {
         };
 
         assert_eq!(second, tree.nodes[1]);
+    }
+
+    #[test]
+    fn should_append_child_and_siblings() {
+        let mut tree: Tree<i32> = Tree::new();
+
+        let root = tree.append_child(0);
+
+        tree.insert_child(&root, 1);
     }
 }
