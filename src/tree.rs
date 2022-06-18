@@ -30,11 +30,13 @@ impl<T> Tree<T> {
         let mut node = Node::new(value);
         node.parent = Some(index);
 
-        self.tail = Some(node_index);
+        if Some(index) == self.tail {
+            self.tail = Some(node_index);
+        }
 
-        let tail = &mut self.nodes[index];
+        let parent = &mut self.nodes[index];
 
-        let last_child = tail.last_child.replace(node_index);
+        let last_child = parent.last_child.replace(node_index);
 
         match last_child {
             Some(sibling_index) => {
@@ -43,8 +45,8 @@ impl<T> Tree<T> {
                 node.prev_sibling = Some(sibling_index);
             }
             None => {
-                tail.first_child = Some(node_index);
-                tail.last_child = Some(node_index);
+                parent.first_child = Some(node_index);
+                parent.last_child = Some(node_index);
             }
         }
 
@@ -59,13 +61,22 @@ impl<T> Tree<T> {
         let mut node = Node::new(value);
         node.prev_sibling = Some(index);
 
-        let tail = &mut self.nodes[index];
-        let next_sibling = tail.next_sibling.replace(node_index);
+        let sibling = &mut self.nodes[index];
+        let next_sibling = sibling.next_sibling.replace(node_index);
 
         node.next_sibling = next_sibling;
-        node.parent = tail.parent;
+        node.parent = sibling.parent;
 
-        self.tail = Some(node_index);
+        if node.next_sibling.is_none() {
+            if let Some(parent) = node.parent {
+                self.nodes[parent].last_child = Some(node_index);
+            }
+        }
+
+        if Some(index) == self.tail {
+            self.tail = Some(node_index);
+        }
+
         self.nodes.push(node);
 
         node_index
@@ -115,7 +126,8 @@ impl<T> Tree<T> {
         self.nodes.len() > id.index
     }
 
-    pub fn insert_child(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
+    #[must_use]
+    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
         if !self.check_id(id) {
             return None;
         }
@@ -125,7 +137,8 @@ impl<T> Tree<T> {
         Some(NodeId { index })
     }
 
-    pub fn insert_sibling(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
+    #[must_use]
+    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
         if !self.check_id(id) {
             return None;
         }
@@ -149,6 +162,7 @@ impl<T> Default for Tree<T> {
 #[cfg(test)]
 mod test {
     use crate::node::Node;
+    use pretty_assertions::assert_eq;
 
     use super::Tree;
 
@@ -262,6 +276,37 @@ mod test {
 
         let root = tree.append_child(0);
 
-        tree.insert_child(&root, 1);
+        let first = tree.append_child_to(&root, 1).unwrap();
+        tree.insert_sibling_after(&first, 2).unwrap();
+
+        let root = Node {
+            value: 0,
+            parent: None,
+            first_child: Some(1),
+            last_child: Some(2),
+            next_sibling: None,
+            prev_sibling: None,
+        };
+        assert_eq!(root, tree.nodes[0]);
+
+        let first = Node {
+            value: 1,
+            parent: Some(0),
+            first_child: None,
+            last_child: None,
+            next_sibling: Some(2),
+            prev_sibling: None,
+        };
+        assert_eq!(first, tree.nodes[1]);
+
+        let second = Node {
+            value: 2,
+            parent: Some(0),
+            first_child: None,
+            last_child: None,
+            next_sibling: None,
+            prev_sibling: Some(1),
+        };
+        assert_eq!(second, tree.nodes[2]);
     }
 }

@@ -185,6 +185,7 @@ impl<T> Iterator for IntoIter<T> {
 #[cfg(test)]
 mod test {
     use crate::tree::Tree;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn should_return_none_on_empty() {
