@@ -1,116 +1,294 @@
+/// Implements iteration over a tree
+// TODO: this could done more safely and better
 use crate::{node::Node, tree::Tree};
 
-#[derive(Debug, Clone)]
-pub struct Iter<'a, T> {
-    pub(crate) index: Option<usize>,
-    pub(crate) nodes: &'a [Node<T>],
-}
+impl<T> Tree<T> {
+    #[must_use]
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            current: self.root,
+            nodes: &self.nodes,
+        }
+    }
 
-impl<'a, V> Iterator for Iter<'a, V> {
-    type Item = &'a V;
+    #[must_use]
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            current: self.root,
+            nodes: self
+                .nodes
+                .iter_mut()
+                .map(|node| Node {
+                    value: Some(&mut node.value),
+                    parent: node.parent,
+                    first_child: node.first_child,
+                    last_child: node.last_child,
+                    next_sibling: node.next_sibling,
+                    prev_sibling: node.prev_sibling,
+                })
+                .collect(),
+        }
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        let node = &self.nodes[index];
-
-        self.index = if let Some(child) = node.first_child {
-            Some(child)
-        } else if let Some(next) = node.next_sibling {
-            Some(next)
-        } else if let Some(parent) = node.parent {
-            self.nodes[parent].next_sibling
-        } else {
-            None
-        };
-
-        Some(&node.value)
+    #[must_use]
+    pub fn into_iterator(self) -> IntoIter<T> {
+        IntoIter {
+            current: self.root,
+            nodes: self
+                .nodes
+                .into_iter()
+                .map(|node| Node {
+                    value: Some(node.value),
+                    parent: node.parent,
+                    first_child: node.first_child,
+                    last_child: node.last_child,
+                    next_sibling: node.next_sibling,
+                    prev_sibling: node.prev_sibling,
+                })
+                .collect(),
+        }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct IntoIter<V> {
-    pub(crate) index: Option<usize>,
-    pub(crate) nodes: Vec<Option<Node<V>>>,
-}
+impl<'a, T> IntoIterator for &'a Tree<T> {
+    type Item = &'a T;
 
-impl<V> Iterator for IntoIter<V> {
-    type Item = V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        self.nodes[index].take().map(|node| {
-            if let Some(child) = node.first_child {
-                self.index = Some(child);
-            } else if let Some(next) = node.next_sibling {
-                self.index = Some(next);
-            } else if let Some(parent) = node.parent {
-                self.index = self.nodes[parent]
-                    .as_ref()
-                    .and_then(|parent| parent.next_sibling);
-            } else {
-                self.index = None;
-            }
-
-            node.value
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct IterMut<'a, V> {
-    pub(crate) index: Option<usize>,
-    pub(crate) nodes: Vec<Option<&'a mut Node<V>>>,
-}
-
-impl<'a, V> Iterator for IterMut<'a, V> {
-    type Item = &'a mut V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.index?;
-        self.nodes[index].take().map(|node| {
-            if let Some(child) = node.first_child {
-                self.index = Some(child);
-            } else if let Some(next) = node.next_sibling {
-                self.index = Some(next);
-            } else if let Some(parent) = node.parent {
-                self.index = self.nodes[parent]
-                    .as_ref()
-                    .and_then(|parent| parent.next_sibling);
-            } else {
-                self.index = None;
-            }
-
-            &mut node.value
-        })
-    }
-}
-
-impl<'a, V> IntoIterator for &'a Tree<V> {
-    type Item = &'a V;
-
-    type IntoIter = Iter<'a, V>;
+    type IntoIter = Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-impl<V> IntoIterator for Tree<V> {
-    type Item = V;
+impl<T> IntoIterator for Tree<T> {
+    type Item = T;
 
-    type IntoIter = IntoIter<V>;
+    type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.into_iterator()
     }
 }
 
-impl<'a, V> IntoIterator for &'a mut Tree<V> {
-    type Item = &'a mut V;
+#[derive(Debug)]
+pub struct Iter<'a, T> {
+    current: Option<usize>,
+    nodes: &'a [Node<T>],
+}
 
-    type IntoIter = IterMut<'a, V>;
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current.take().map(|current| {
+            let node = &self.nodes[current];
+
+            if let Some(child) = node.first_child {
+                self.current = Some(child);
+            } else if let Some(sibling) = node.next_sibling {
+                self.current = Some(sibling);
+            } else {
+                // Start from the current node
+                let mut next = node;
+                // Cycle to the parent to search for the next sibling or go up the tree
+                while let Some(parent_index) = next.parent {
+                    next = &self.nodes[parent_index];
+                    if next.next_sibling.is_some() {
+                        break;
+                    }
+                }
+                // If next.sibling is Some we have the next node, otherwise both next.parent is None
+                // and next.next_sibling is None
+                self.current = next.next_sibling;
+            }
+
+            &node.value
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct IterMut<'a, T> {
+    current: Option<usize>,
+    nodes: Vec<Node<Option<&'a mut T>>>,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current.take().and_then(|current| {
+            // TODO: this could done more safely
+            let node = &self.nodes[current];
+
+            if let Some(child) = node.first_child {
+                self.current = Some(child);
+            } else if let Some(sibling) = node.next_sibling {
+                self.current = Some(sibling);
+            } else {
+                // Start from the current node
+                let mut next = node;
+                // Cycle to the parent to search for the next sibling or go up the tree
+                while let Some(parent_index) = next.parent {
+                    next = &self.nodes[parent_index];
+                    if next.next_sibling.is_some() {
+                        break;
+                    }
+                }
+                // If next.sibling is Some we have the next node, otherwise both next.parent is None
+                // and next.next_sibling is None
+                self.current = next.next_sibling;
+            }
+
+            self.nodes[current].value.take()
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct IntoIter<T> {
+    current: Option<usize>,
+    nodes: Vec<Node<Option<T>>>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current.take().and_then(|current| {
+            let node = &self.nodes[current];
+
+            if let Some(child) = node.first_child {
+                self.current = Some(child);
+            } else if let Some(sibling) = node.next_sibling {
+                self.current = Some(sibling);
+            } else {
+                // Start from the current node
+                let mut next = node;
+                // Cycle to the parent to search for the next sibling or go up the tree
+                while let Some(parent_index) = next.parent {
+                    next = &self.nodes[parent_index];
+                    if next.next_sibling.is_some() {
+                        break;
+                    }
+                }
+                // If next.sibling is Some we have the next node, otherwise both next.parent is None
+                // and next.next_sibling is None
+                self.current = next.next_sibling;
+            }
+
+            self.nodes[current].value.take()
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tree::Tree;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn should_return_none_on_empty() {
+        let tree = Tree::<i32>::new();
+
+        assert_eq!(None, tree.iter().next());
+    }
+
+    #[test]
+    fn should_iter_children() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_child(1);
+        tree.append_child(2);
+
+        let mut iter = tree.iter();
+
+        assert_eq!(1, *iter.next().unwrap());
+        assert_eq!(2, *iter.next().unwrap());
+    }
+
+    #[test]
+    fn should_iter_siblings() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_sibling(1);
+        tree.append_sibling(2);
+
+        dbg!(&tree);
+
+        let mut iter = tree.iter();
+
+        assert_eq!(1, *iter.next().unwrap());
+        assert_eq!(2, *iter.next().unwrap());
+    }
+
+    #[test]
+    fn mut_should_return_none_on_empty() {
+        let mut tree = Tree::<i32>::new();
+
+        assert_eq!(None, tree.iter_mut().next());
+    }
+
+    #[test]
+    fn mut_should_iter_children() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_child(1);
+        tree.append_child(2);
+
+        let mut iter = tree.iter_mut();
+
+        assert_eq!(1, *iter.next().unwrap());
+        assert_eq!(2, *iter.next().unwrap());
+    }
+
+    #[test]
+    fn mut_should_iter_siblings() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_sibling(1);
+        tree.append_sibling(2);
+
+        dbg!(&tree);
+
+        let mut iter = tree.iter_mut();
+
+        assert_eq!(1, *iter.next().unwrap());
+        assert_eq!(2, *iter.next().unwrap());
+    }
+
+    #[test]
+    fn into_should_return_none_on_empty() {
+        let tree = Tree::<i32>::new();
+
+        assert_eq!(None, tree.into_iterator().next());
+    }
+
+    #[test]
+    fn into_should_iter_children() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_child(1);
+        tree.append_child(2);
+
+        let mut iter = tree.into_iterator();
+
+        assert_eq!(1, iter.next().unwrap());
+        assert_eq!(2, iter.next().unwrap());
+    }
+
+    #[test]
+    fn into_should_iter_siblings() {
+        let mut tree = Tree::<i32>::new();
+
+        tree.append_sibling(1);
+        tree.append_sibling(2);
+
+        dbg!(&tree);
+
+        let mut iter = tree.into_iterator();
+
+        assert_eq!(1, iter.next().unwrap());
+        assert_eq!(2, iter.next().unwrap());
     }
 }
