@@ -8,11 +8,13 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
+    /// Create a new tree.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Create a new tree with a specific parameter.
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
