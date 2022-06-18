@@ -27,6 +27,6 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
       - name: Publish crate
-        run: cargo publish --verbose --frozen
+        run: cargo publish --verbose --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
