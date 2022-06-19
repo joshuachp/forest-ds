@@ -1,6 +1,6 @@
 use crate::{id::NodeId, node::Node};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tree<T> {
     pub(crate) root: Option<usize>,
     pub(crate) tail: Option<usize>,
