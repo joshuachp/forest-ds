@@ -6,7 +6,7 @@ impl<T> Tree<T> {
     #[must_use]
     pub fn iter(&self) -> Iter<T> {
         Iter {
-            current: self.root,
+            current: self.first_node,
             nodes: &self.nodes,
         }
     }
@@ -14,7 +14,7 @@ impl<T> Tree<T> {
     #[must_use]
     pub fn iter_mut(&mut self) -> IterMut<T> {
         IterMut {
-            current: self.root,
+            current: self.first_node,
             nodes: self
                 .nodes
                 .iter_mut()
@@ -33,7 +33,7 @@ impl<T> Tree<T> {
     #[must_use]
     pub fn into_iterator(self) -> IntoIter<T> {
         IntoIter {
-            current: self.root,
+            current: self.first_node,
             nodes: self
                 .nodes
                 .into_iter()

@@ -1,9 +1,9 @@
 use crate::{id::NodeId, node::Node};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tree<T> {
-    pub(crate) root: Option<usize>,
-    pub(crate) tail: Option<usize>,
+    pub(crate) first_node: Option<usize>,
+    pub(crate) last_node: Option<usize>,
     pub(crate) nodes: Vec<Node<T>>,
 }
 
@@ -18,10 +18,26 @@ impl<T> Tree<T> {
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            root: None,
-            tail: None,
+            first_node: None,
+            last_node: None,
             nodes: Vec::with_capacity(capacity),
         }
+    }
+
+    pub fn first_node_id(&self) -> Option<NodeId> {
+        self.first_node.map(|index| NodeId { index })
+    }
+
+    pub fn last_node_id(&self) -> Option<NodeId> {
+        self.first_node.map(|index| NodeId { index })
+    }
+
+    pub fn get(&self, id: &NodeId) -> Option<&T> {
+        self.nodes.get(id.index).map(|node| &node.value)
+    }
+
+    pub fn get_mut(&mut self, id: &NodeId) -> Option<&mut T> {
+        self.nodes.get_mut(id.index).map(|node| &mut node.value)
     }
 
     /// Insert the last child for a given index.
@@ -30,8 +46,8 @@ impl<T> Tree<T> {
         let mut node = Node::new(value);
         node.parent = Some(index);
 
-        if Some(index) == self.tail {
-            self.tail = Some(node_index);
+        if Some(index) == self.last_node {
+            self.last_node = Some(node_index);
         }
 
         let parent = &mut self.nodes[index];
@@ -73,8 +89,8 @@ impl<T> Tree<T> {
             }
         }
 
-        if Some(index) == self.tail {
-            self.tail = Some(node_index);
+        if Some(index) == self.last_node {
+            self.last_node = Some(node_index);
         }
 
         self.nodes.push(node);
@@ -84,14 +100,14 @@ impl<T> Tree<T> {
 
     /// Appends the value to the last element of the three as its child. If None creates a new root.
     pub fn append_child(&mut self, value: T) -> NodeId {
-        let index = match self.tail {
+        let index = match self.last_node {
             Some(tail_index) => self.insert_child_at(tail_index, value),
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
                 // Node and set the root and tail to 0.
                 self.nodes.push(Node::new(value));
-                self.root = Some(0);
-                self.tail = Some(0);
+                self.first_node = Some(0);
+                self.last_node = Some(0);
 
                 0
             }
@@ -103,15 +119,15 @@ impl<T> Tree<T> {
     /// Appends the value to the last element of the three as its sibling. If None creates a new
     /// root.
     pub fn append_sibling(&mut self, value: T) -> NodeId {
-        let index = match self.tail {
+        let index = match self.last_node {
             Some(tail_index) => self.insert_sibling_at(tail_index, value),
             None => {
                 // The tree must be empty, since we don't have a tail node. We can just push a new
                 // Node and set the root and tail to 0.
                 const ROOT_INDEX: usize = 0;
                 self.nodes.push(Node::new(value));
-                self.root = Some(ROOT_INDEX);
-                self.tail = Some(ROOT_INDEX);
+                self.first_node = Some(ROOT_INDEX);
+                self.last_node = Some(ROOT_INDEX);
 
                 ROOT_INDEX
             }
@@ -152,8 +168,8 @@ impl<T> Tree<T> {
 impl<T> Default for Tree<T> {
     fn default() -> Self {
         Self {
-            root: Option::default(),
-            tail: Option::default(),
+            first_node: Option::default(),
+            last_node: Option::default(),
             nodes: Vec::default(),
         }
     }
@@ -171,8 +187,8 @@ mod test {
         let mut tree: Tree<i32> = Tree::new();
         tree.append_child(42);
 
-        assert_eq!(Some(0), tree.root);
-        assert_eq!(Some(0), tree.tail);
+        assert_eq!(Some(0), tree.first_node);
+        assert_eq!(Some(0), tree.last_node);
 
         let node = Node {
             value: 42,
@@ -192,8 +208,8 @@ mod test {
         tree.append_child(1);
         tree.append_child(2);
 
-        assert_eq!(Some(0), tree.root);
-        assert_eq!(Some(1), tree.tail);
+        assert_eq!(Some(0), tree.first_node);
+        assert_eq!(Some(1), tree.last_node);
 
         let first = Node {
             value: 1,
@@ -223,8 +239,8 @@ mod test {
         let mut tree: Tree<i32> = Tree::new();
         tree.append_sibling(42);
 
-        assert_eq!(Some(0), tree.root);
-        assert_eq!(Some(0), tree.tail);
+        assert_eq!(Some(0), tree.first_node);
+        assert_eq!(Some(0), tree.last_node);
 
         let node = Node {
             value: 42,
@@ -244,8 +260,8 @@ mod test {
         tree.append_sibling(1);
         tree.append_sibling(2);
 
-        assert_eq!(Some(0), tree.root);
-        assert_eq!(Some(1), tree.tail);
+        assert_eq!(Some(0), tree.first_node);
+        assert_eq!(Some(1), tree.last_node);
 
         let first = Node {
             value: 1,
