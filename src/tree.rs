@@ -24,6 +24,14 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Add a node to the tree, without relations with the other nodes.
+    pub fn create_node(&mut self, value: T) -> NodeId {
+        let index = self.nodes.len();
+        self.nodes.push(Node::new(value));
+
+        NodeId { index }
+    }
+
     pub fn first_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }

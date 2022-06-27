@@ -1,12 +1,20 @@
 /// Implements iteration over a tree
 // TODO: this could done more safely and better
-use crate::{node::Node, tree::Tree};
+use crate::{id::NodeId, node::Node, tree::Tree};
 
 impl<T> Tree<T> {
     #[must_use]
     pub fn iter(&self) -> Iter<T> {
         Iter {
             current: self.first_node,
+            nodes: &self.nodes,
+        }
+    }
+
+    #[must_use]
+    pub fn iter_from(&self, id: NodeId) -> Iter<T> {
+        Iter {
+            current: Some(id.index),
             nodes: &self.nodes,
         }
     }
