@@ -32,18 +32,22 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
+    #[must_use]
     pub fn first_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
+    #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
+    #[must_use]
     pub fn get(&self, id: &NodeId) -> Option<&T> {
         self.nodes.get(id.index).map(|node| &node.value)
     }
 
+    #[must_use]
     pub fn get_mut(&mut self, id: &NodeId) -> Option<&mut T> {
         self.nodes.get_mut(id.index).map(|node| &mut node.value)
     }

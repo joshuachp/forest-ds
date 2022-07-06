@@ -48,6 +48,12 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Make the `child` nodes as the last child of the `parent` node.
+    ///
+    /// # Errors
+    ///
+    /// - Fails of the same `NodeId` is passed
+    /// - TODO: Fail if the child node is parent of the parent node.
     pub fn make_child(&mut self, child: &NodeId, parent: &NodeId) -> Result<(), Error> {
         debug_assert!(child.index < self.nodes.len());
         debug_assert!(parent.index < self.nodes.len());
