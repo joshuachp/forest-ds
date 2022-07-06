@@ -2,17 +2,17 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v4.3.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/joshuachp/pre-commit-hooks
-    rev: 0.1.12
+    rev: 0.1.15
     hooks:
       - id: rust-fmt
       - id: rust-test
       - id: rust-clippy
-      - id: nix-alejandra
+      - id: nix-nixpkgs-fmt
       - id: nix-flake-check
