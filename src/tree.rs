@@ -148,32 +148,20 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
-    /// Check that a `NodeId` exists.
-    #[must_use]
-    pub fn check_id(&self, id: &NodeId) -> bool {
-        self.nodes.len() > id.index
-    }
-
-    #[must_use]
-    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
-        if !self.check_id(id) {
-            return None;
-        }
+    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> NodeId {
+        debug_assert!(self.nodes.len() > id.index);
 
         let index = self.insert_child_at(id.index, value);
 
-        Some(NodeId { index })
+        NodeId { index }
     }
 
-    #[must_use]
-    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
-        if !self.check_id(id) {
-            return None;
-        }
+    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> NodeId {
+        debug_assert!(self.nodes.len() > id.index);
 
         let index = self.insert_sibling_at(id.index, value);
 
-        Some(NodeId { index })
+        NodeId { index }
     }
 }
 
@@ -304,8 +292,8 @@ mod test {
 
         let root = tree.append_child(0);
 
-        let first = tree.append_child_to(&root, 1).unwrap();
-        tree.insert_sibling_after(&first, 2).unwrap();
+        let first = tree.append_child_to(&root, 1);
+        tree.insert_sibling_after(&first, 2);
 
         let root = Node {
             value: 0,
