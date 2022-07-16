@@ -32,11 +32,13 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
+    // NOTE: not safe if remove is introduced
     #[must_use]
     pub fn first_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
+    // NOTE: not safe if remove is introduced
     #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })

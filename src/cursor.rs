@@ -14,7 +14,7 @@ pub struct Cursor<'a, T> {
 }
 
 impl<T> Tree<T> {
-    pub fn cursor(&mut self, id: NodeId) -> Cursor<T> {
+    pub fn cursor(&mut self, id: &NodeId) -> Cursor<T> {
         Cursor {
             index: id.index,
             tree: self,
@@ -22,11 +22,11 @@ impl<T> Tree<T> {
     }
 
     pub fn cursor_first(&mut self) -> Option<Cursor<T>> {
-        self.last_node_id().map(|id| self.cursor(id))
+        self.first_node.map(|index| Cursor { index, tree: self })
     }
 
     pub fn cursor_last(&mut self) -> Option<Cursor<T>> {
-        self.first_node_id().map(|id| self.cursor(id))
+        self.last_node.map(|index| Cursor { index, tree: self })
     }
 }
 
