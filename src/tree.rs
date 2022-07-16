@@ -55,7 +55,7 @@ impl<T> Tree<T> {
     }
 
     /// Insert the last child for a given index.
-    fn insert_child_at(&mut self, index: usize, value: T) -> usize {
+    pub(crate) fn insert_child_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.parent = Some(index);
@@ -86,7 +86,7 @@ impl<T> Tree<T> {
     }
 
     /// Insert the next sibling for a given index.
-    fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
+    pub(crate) fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.prev_sibling = Some(index);

@@ -111,6 +111,18 @@ impl<T> Cursor<'_, T> {
                 Err(cursor)
             })
     }
+
+    pub fn append_child(&mut self, value: T) -> NodeId {
+        NodeId {
+            index: self.tree.insert_child_at(self.index, value),
+        }
+    }
+
+    pub fn append_sibling(&mut self, value: T) -> NodeId {
+        NodeId {
+            index: self.tree.insert_sibling_at(self.index, value),
+        }
+    }
 }
 
 #[cfg(test)]
