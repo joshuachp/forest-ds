@@ -112,3 +112,40 @@ impl<T> Cursor<'_, T> {
             })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::tree::Tree;
+
+    #[test]
+    fn should_move_next() {
+        let mut tree: Tree<i32> = Tree::new();
+        // A
+        tree.append_child(0);
+
+        // A -> B
+        let b = tree.append_child(1);
+
+        // A -> B -> C
+        tree.append_child(2);
+
+        // A -> B -> D
+        //   -> C
+        tree.insert_sibling_after(&b, 3);
+
+        let mut cursor = tree.cursor_first().unwrap();
+
+        assert_eq!(0, *cursor.get());
+
+        cursor.move_next().unwrap();
+        assert_eq!(1, *cursor.get());
+
+        cursor.move_next().unwrap();
+        assert_eq!(2, *cursor.get());
+
+        cursor.move_next().unwrap();
+        assert_eq!(3, *cursor.get());
+
+        assert!(cursor.move_next().is_err());
+    }
+}
