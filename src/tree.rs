@@ -1,4 +1,4 @@
-use crate::{id::NodeId, node::Node};
+use crate::{error::Error, id::NodeId, node::Node};
 
 #[derive(Debug, Clone)]
 pub struct Tree<T> {
@@ -32,26 +32,14 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
-    // NOTE: not safe if remove is introduced
     #[must_use]
     pub fn first_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
-    // NOTE: not safe if remove is introduced
     #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
-    }
-
-    #[must_use]
-    pub fn get(&self, id: &NodeId) -> Option<&T> {
-        self.nodes.get(id.index).map(|node| &node.value)
-    }
-
-    #[must_use]
-    pub fn get_mut(&mut self, id: &NodeId) -> Option<&mut T> {
-        self.nodes.get_mut(id.index).map(|node| &mut node.value)
     }
 
     /// Insert the last child for a given index.
@@ -150,20 +138,20 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
-    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> NodeId {
-        debug_assert!(self.nodes.len() > id.index);
+    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
+        let index = self.index(id).ok_or(Error::Invalid("passed"))?;
 
-        let index = self.insert_child_at(id.index, value);
+        let index = self.insert_child_at(index, value);
 
-        NodeId { index }
+        Ok(NodeId { index })
     }
 
-    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> NodeId {
-        debug_assert!(self.nodes.len() > id.index);
+    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
+        let index = self.index(id).ok_or(Error::Invalid("passed"))?;
 
-        let index = self.insert_sibling_at(id.index, value);
+        let index = self.insert_sibling_at(index, value);
 
-        NodeId { index }
+        Ok(NodeId { index })
     }
 }
 
@@ -294,8 +282,8 @@ mod test {
 
         let root = tree.append_child(0);
 
-        let first = tree.append_child_to(&root, 1);
-        tree.insert_sibling_after(&first, 2);
+        let first = tree.append_child_to(&root, 1).unwrap();
+        tree.insert_sibling_after(&first, 2).unwrap();
 
         let root = Node {
             value: 0,

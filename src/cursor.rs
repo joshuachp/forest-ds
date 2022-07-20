@@ -14,11 +14,8 @@ pub struct Cursor<'a, T> {
 }
 
 impl<T> Tree<T> {
-    pub fn cursor(&mut self, id: &NodeId) -> Cursor<T> {
-        Cursor {
-            index: id.index,
-            tree: self,
-        }
+    pub fn cursor(&mut self, id: &NodeId) -> Option<Cursor<T>> {
+        self.index(id).map(|index| Cursor { index, tree: self })
     }
 
     pub fn cursor_first(&mut self) -> Option<Cursor<T>> {
@@ -143,7 +140,7 @@ mod test {
 
         // A -> B -> D
         //   -> C
-        tree.insert_sibling_after(&b, 3);
+        tree.insert_sibling_after(&b, 3).unwrap();
 
         let mut cursor = tree.cursor_first().unwrap();
 

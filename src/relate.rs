@@ -55,19 +55,19 @@ impl<T> Tree<T> {
     /// - Fails of the same `NodeId` is passed
     /// - TODO: Fail if the child node is parent of the parent node.
     pub fn make_child(&mut self, child: &NodeId, parent: &NodeId) -> Result<(), Error> {
-        debug_assert!(child.index < self.nodes.len());
-        debug_assert!(parent.index < self.nodes.len());
+        let child_index = self.index(child).ok_or(Error::Invalid("for child"))?;
+        let parent_index = self.index(parent).ok_or(Error::Invalid("for parent"))?;
 
-        if child.eq(parent) {
+        if child_index == parent_index {
             return Err(Error::SameNode);
         }
 
         // TODO: search if the child has the parent as child
 
-        let parent_node = &self.nodes[parent.index];
+        let parent_node = &self.nodes[parent_index];
         let last_child = parent_node.last_child;
 
-        self.relate(child.index, Some(parent.index), last_child, None);
+        self.relate(child_index, Some(parent.index), last_child, None);
 
         Ok(())
     }
