@@ -1,4 +1,4 @@
-use crate::{id::NodeId, node::Node};
+use crate::{error::Error, id::NodeId, node::Node};
 
 #[derive(Debug, Clone)]
 pub struct Tree<T> {
@@ -24,24 +24,26 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Add a node to the tree, without relations with the other nodes.
+    pub fn create_node(&mut self, value: T) -> NodeId {
+        let index = self.nodes.len();
+        self.nodes.push(Node::new(value));
+
+        NodeId { index }
+    }
+
+    #[must_use]
     pub fn first_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
+    #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
         self.first_node.map(|index| NodeId { index })
     }
 
-    pub fn get(&self, id: &NodeId) -> Option<&T> {
-        self.nodes.get(id.index).map(|node| &node.value)
-    }
-
-    pub fn get_mut(&mut self, id: &NodeId) -> Option<&mut T> {
-        self.nodes.get_mut(id.index).map(|node| &mut node.value)
-    }
-
     /// Insert the last child for a given index.
-    fn insert_child_at(&mut self, index: usize, value: T) -> usize {
+    pub(crate) fn insert_child_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.parent = Some(index);
@@ -72,7 +74,7 @@ impl<T> Tree<T> {
     }
 
     /// Insert the next sibling for a given index.
-    fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
+    pub(crate) fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
         let node_index = self.nodes.len();
         let mut node = Node::new(value);
         node.prev_sibling = Some(index);
@@ -136,32 +138,20 @@ impl<T> Tree<T> {
         NodeId { index }
     }
 
-    /// Check that a `NodeId` exists.
-    #[must_use]
-    pub fn check_id(&self, id: &NodeId) -> bool {
-        self.nodes.len() > id.index
+    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
+        let index = self.index(id).ok_or(Error::Invalid("passed"))?;
+
+        let index = self.insert_child_at(index, value);
+
+        Ok(NodeId { index })
     }
 
-    #[must_use]
-    pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
-        if !self.check_id(id) {
-            return None;
-        }
+    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
+        let index = self.index(id).ok_or(Error::Invalid("passed"))?;
 
-        let index = self.insert_child_at(id.index, value);
+        let index = self.insert_sibling_at(index, value);
 
-        Some(NodeId { index })
-    }
-
-    #[must_use]
-    pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Option<NodeId> {
-        if !self.check_id(id) {
-            return None;
-        }
-
-        let index = self.insert_sibling_at(id.index, value);
-
-        Some(NodeId { index })
+        Ok(NodeId { index })
     }
 }
 

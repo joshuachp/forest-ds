@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use forest::tree::Tree;
+use forest_ds::tree::Tree;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let size: usize = 1_000_000;
