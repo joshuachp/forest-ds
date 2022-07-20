@@ -1,10 +1,11 @@
-use crate::{error::Error, id::NodeId, node::Node};
+use crate::{entry::Entry, error::Error, id::NodeId, node::Node};
 
 #[derive(Debug, Clone)]
 pub struct Tree<T> {
+    pub(crate) first_free: Option<usize>,
     pub(crate) first_node: Option<usize>,
     pub(crate) last_node: Option<usize>,
-    pub(crate) nodes: Vec<Node<T>>,
+    pub(crate) nodes: Vec<Entry<T>>,
 }
 
 impl<T> Tree<T> {
@@ -18,6 +19,7 @@ impl<T> Tree<T> {
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
+            first_free: None,
             first_node: None,
             last_node: None,
             nodes: Vec::with_capacity(capacity),
@@ -26,10 +28,17 @@ impl<T> Tree<T> {
 
     /// Add a node to the tree, without relations with the other nodes.
     pub fn create_node(&mut self, value: T) -> NodeId {
-        let index = self.nodes.len();
-        self.nodes.push(Node::new(value));
+        let index = self.allocate_node(Node::new(value));
 
         NodeId { index }
+    }
+
+    pub fn remove(&mut self, id: NodeId) -> Option<T> {
+        self.index(&id).map(|index| {
+            let entry = self.free_node(index);
+
+            entry.unwrap().value
+        })
     }
 
     #[must_use]
@@ -44,21 +53,22 @@ impl<T> Tree<T> {
 
     /// Insert the last child for a given index.
     pub(crate) fn insert_child_at(&mut self, index: usize, value: T) -> usize {
-        let node_index = self.nodes.len();
         let mut node = Node::new(value);
+        let node_index = self.get_first_free();
+
         node.parent = Some(index);
 
         if Some(index) == self.last_node {
             self.last_node = Some(node_index);
         }
 
-        let parent = &mut self.nodes[index];
+        let parent = self.nodes[index].unwrap_mut();
 
         let last_child = parent.last_child.replace(node_index);
 
         match last_child {
             Some(sibling_index) => {
-                let sibling = &mut self.nodes[sibling_index];
+                let sibling = self.nodes[sibling_index].unwrap_mut();
                 sibling.next_sibling = Some(node_index);
                 node.prev_sibling = Some(sibling_index);
             }
@@ -68,18 +78,20 @@ impl<T> Tree<T> {
             }
         }
 
-        self.nodes.push(node);
+        let index = self.allocate_node(node);
+        debug_assert_eq!(index, node_index);
 
         node_index
     }
 
     /// Insert the next sibling for a given index.
     pub(crate) fn insert_sibling_at(&mut self, index: usize, value: T) -> usize {
-        let node_index = self.nodes.len();
+        let node_index = self.get_first_free();
         let mut node = Node::new(value);
+
         node.prev_sibling = Some(index);
 
-        let sibling = &mut self.nodes[index];
+        let sibling = self.nodes[index].unwrap_mut();
         let next_sibling = sibling.next_sibling.replace(node_index);
 
         node.next_sibling = next_sibling;
@@ -87,7 +99,7 @@ impl<T> Tree<T> {
 
         if node.next_sibling.is_none() {
             if let Some(parent) = node.parent {
-                self.nodes[parent].last_child = Some(node_index);
+                self.nodes[parent].unwrap_mut().last_child = Some(node_index);
             }
         }
 
@@ -95,7 +107,8 @@ impl<T> Tree<T> {
             self.last_node = Some(node_index);
         }
 
-        self.nodes.push(node);
+        let index = self.allocate_node(node);
+        debug_assert_eq!(index, node_index);
 
         node_index
     }
@@ -105,13 +118,11 @@ impl<T> Tree<T> {
         let index = match self.last_node {
             Some(tail_index) => self.insert_child_at(tail_index, value),
             None => {
-                // The tree must be empty, since we don't have a tail node. We can just push a new
-                // Node and set the root and tail to 0.
-                self.nodes.push(Node::new(value));
-                self.first_node = Some(0);
-                self.last_node = Some(0);
+                let index = self.allocate_node(Node::new(value));
+                self.first_node = Some(index);
+                self.last_node = Some(index);
 
-                0
+                index
             }
         };
 
@@ -124,14 +135,11 @@ impl<T> Tree<T> {
         let index = match self.last_node {
             Some(tail_index) => self.insert_sibling_at(tail_index, value),
             None => {
-                // The tree must be empty, since we don't have a tail node. We can just push a new
-                // Node and set the root and tail to 0.
-                const ROOT_INDEX: usize = 0;
-                self.nodes.push(Node::new(value));
-                self.first_node = Some(ROOT_INDEX);
-                self.last_node = Some(ROOT_INDEX);
+                let index = self.allocate_node(Node::new(value));
+                self.first_node = Some(index);
+                self.last_node = Some(index);
 
-                ROOT_INDEX
+                index
             }
         };
 
@@ -158,6 +166,7 @@ impl<T> Tree<T> {
 impl<T> Default for Tree<T> {
     fn default() -> Self {
         Self {
+            first_free: Option::default(),
             first_node: Option::default(),
             last_node: Option::default(),
             nodes: Vec::default(),
@@ -167,7 +176,7 @@ impl<T> Default for Tree<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::node::Node;
+    use crate::{entry::Entry, node::Node};
     use pretty_assertions::assert_eq;
 
     use super::Tree;
@@ -189,7 +198,7 @@ mod test {
             prev_sibling: None,
         };
 
-        assert_eq!(node, tree.nodes[0]);
+        assert_eq!(Entry::Occupied(node), tree.nodes[0]);
     }
 
     #[test]
@@ -210,7 +219,7 @@ mod test {
             prev_sibling: None,
         };
 
-        assert_eq!(first, tree.nodes[0]);
+        assert_eq!(Entry::Occupied(first), tree.nodes[0]);
 
         let second = Node {
             value: 2,
@@ -221,7 +230,7 @@ mod test {
             prev_sibling: None,
         };
 
-        assert_eq!(second, tree.nodes[1]);
+        assert_eq!(Entry::Occupied(second), tree.nodes[1]);
     }
 
     #[test]
@@ -241,7 +250,7 @@ mod test {
             prev_sibling: None,
         };
 
-        assert_eq!(node, tree.nodes[0]);
+        assert_eq!(Entry::Occupied(node), tree.nodes[0]);
     }
 
     #[test]
@@ -262,7 +271,7 @@ mod test {
             prev_sibling: None,
         };
 
-        assert_eq!(first, tree.nodes[0]);
+        assert_eq!(Entry::Occupied(first), tree.nodes[0]);
 
         let second = Node {
             value: 2,
@@ -273,7 +282,7 @@ mod test {
             prev_sibling: Some(0),
         };
 
-        assert_eq!(second, tree.nodes[1]);
+        assert_eq!(Entry::Occupied(second), tree.nodes[1]);
     }
 
     #[test]
@@ -293,7 +302,7 @@ mod test {
             next_sibling: None,
             prev_sibling: None,
         };
-        assert_eq!(root, tree.nodes[0]);
+        assert_eq!(Entry::Occupied(root), tree.nodes[0]);
 
         let first = Node {
             value: 1,
@@ -303,7 +312,7 @@ mod test {
             next_sibling: Some(2),
             prev_sibling: None,
         };
-        assert_eq!(first, tree.nodes[1]);
+        assert_eq!(Entry::Occupied(first), tree.nodes[1]);
 
         let second = Node {
             value: 2,
@@ -313,6 +322,6 @@ mod test {
             next_sibling: None,
             prev_sibling: Some(1),
         };
-        assert_eq!(second, tree.nodes[2]);
+        assert_eq!(Entry::Occupied(second), tree.nodes[2]);
     }
 }
