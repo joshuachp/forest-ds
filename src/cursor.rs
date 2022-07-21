@@ -9,7 +9,7 @@ use crate::{id::NodeId, tree::Tree};
 /// - `Err`: the previous unmodified cursor
 #[derive(Debug)]
 pub struct Cursor<'a, T> {
-    index: usize,
+    pub(crate) index: usize,
     tree: &'a mut Tree<T>,
 }
 
@@ -28,6 +28,11 @@ impl<T> Tree<T> {
 }
 
 impl<T> Cursor<'_, T> {
+    #[must_use]
+    pub fn id(&self) -> NodeId {
+        NodeId::new(self.index)
+    }
+
     #[must_use]
     pub fn get(&self) -> &T {
         &self.tree.nodes[self.index].unwrap_ref().value

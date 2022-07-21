@@ -33,11 +33,61 @@ impl<T> Tree<T> {
         NodeId::new(index)
     }
 
+    /// Remove the node
+    #[must_use]
     pub fn remove(&mut self, id: NodeId) -> Option<T> {
         self.index(&id).map(|index| {
             let entry = self.free_node(index);
 
-            entry.unwrap().value
+            let node = entry.unwrap();
+
+            if let Some(parent_index) = node.parent {
+                let parent = self.nodes[parent_index].unwrap_mut();
+
+                if parent.first_child == Some(index) {
+                    parent.first_child = node.next_sibling;
+                }
+
+                if parent.last_child == Some(index) {
+                    parent.last_child = node.prev_sibling;
+                }
+            }
+
+            if let Some(index) = node.next_sibling {
+                let next_sibling = self.nodes[index].unwrap_mut();
+                next_sibling.prev_sibling = node.prev_sibling;
+            }
+
+            if let Some(index) = node.prev_sibling {
+                let prev_sibling = self.nodes[index].unwrap_mut();
+                prev_sibling.next_sibling = node.next_sibling;
+            }
+
+            if let Some(index) = node.first_child {
+                let mut children = vec![index];
+
+                let mut cursor = self.cursor(&NodeId::new(index)).unwrap();
+
+                while cursor.next_sibling().is_ok() {
+                    children.push(cursor.index);
+                }
+
+                while let Some(index) = children.pop() {
+                    let mut cursor = self.cursor(&NodeId::new(index)).unwrap();
+
+                    if cursor.first_child().is_ok() {
+                        children.push(cursor.index);
+
+                        while cursor.next_sibling().is_ok() {
+                            children.push(cursor.index);
+                        }
+                    }
+
+                    self.free_node(index);
+                }
+            }
+
+            node.value
         })
     }
 
@@ -333,5 +383,21 @@ mod test {
             prev_sibling: Some(1),
         };
         assert_eq!(Entry::Occupied(second), tree.nodes[2]);
+    }
+
+    #[test]
+    fn should_remove() {
+        let mut tree = Tree::new();
+
+        tree.append_child(1);
+
+        let id = tree.append_child(2);
+
+        tree.append_sibling(3);
+        tree.append_child(4);
+
+        assert_eq!(Some(2), tree.remove(id));
+        assert_eq!(1, *tree.get(&tree.first_node_id().unwrap()).unwrap());
+        assert_eq!(1, *tree.get(&tree.last_node_id().unwrap()).unwrap());
     }
 }
