@@ -67,7 +67,7 @@ impl<T> Tree<T> {
         let parent_node = self.nodes[parent_index].unwrap_ref();
         let last_child = parent_node.last_child;
 
-        self.relate(child_index, Some(parent.index), last_child, None);
+        self.relate(child_index, Some(parent_index), last_child, None);
 
         Ok(())
     }

@@ -2,7 +2,13 @@ use crate::tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NodeId {
-    pub(crate) index: usize,
+    index: usize,
+}
+
+impl NodeId {
+    pub(crate) fn new(index: usize) -> Self {
+        Self { index }
+    }
 }
 
 impl<T> Tree<T> {
@@ -19,10 +25,12 @@ impl<T> Tree<T> {
     }
 
     pub(crate) fn index(&self, id: &NodeId) -> Option<usize> {
-        if self.nodes.len() > id.index {
-            Some(id.index)
-        } else {
-            None
-        }
+        self.nodes.get(id.index).and_then(|entry| {
+            if entry.is_node() {
+                Some(id.index)
+            } else {
+                None
+            }
+        })
     }
 }

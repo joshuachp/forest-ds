@@ -7,8 +7,12 @@ pub(crate) enum Entry<T> {
 }
 
 impl<T> Entry<T> {
-    pub(crate) fn replace(&mut self, val: Self) -> Self {
+    pub fn replace(&mut self, val: Self) -> Self {
         std::mem::replace(self, val)
+    }
+
+    pub fn is_node(&self) -> bool {
+        matches!(self, Entry::Occupied(..))
     }
 
     pub fn unwrap(self) -> Node<T> {

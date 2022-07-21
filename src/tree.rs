@@ -30,7 +30,7 @@ impl<T> Tree<T> {
     pub fn create_node(&mut self, value: T) -> NodeId {
         let index = self.allocate_node(Node::new(value));
 
-        NodeId { index }
+        NodeId::new(index)
     }
 
     pub fn remove(&mut self, id: NodeId) -> Option<T> {
@@ -43,12 +43,12 @@ impl<T> Tree<T> {
 
     #[must_use]
     pub fn first_node_id(&self) -> Option<NodeId> {
-        self.first_node.map(|index| NodeId { index })
+        self.first_node.map(NodeId::new)
     }
 
     #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
-        self.first_node.map(|index| NodeId { index })
+        self.first_node.map(NodeId::new)
     }
 
     /// Insert the last child for a given index.
@@ -126,7 +126,7 @@ impl<T> Tree<T> {
             }
         };
 
-        NodeId { index }
+        NodeId::new(index)
     }
 
     /// Appends the value to the last element of the three as its sibling. If None creates a new
@@ -143,23 +143,33 @@ impl<T> Tree<T> {
             }
         };
 
-        NodeId { index }
+        NodeId::new(index)
     }
 
+    /// Appends a new node as child of the given one
+    ///
+    /// # Errors
+    ///
+    /// Will error if the given node id was removed.
     pub fn append_child_to(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
         let index = self.index(id).ok_or(Error::Invalid("passed"))?;
 
         let index = self.insert_child_at(index, value);
 
-        Ok(NodeId { index })
+        Ok(NodeId::new(index))
     }
 
+    /// Insert a new node after the as the sibling of the given one
+    ///
+    /// # Errors
+    ///
+    /// Will error if the given node id was removed.
     pub fn insert_sibling_after(&mut self, id: &NodeId, value: T) -> Result<NodeId, Error> {
         let index = self.index(id).ok_or(Error::Invalid("passed"))?;
 
         let index = self.insert_sibling_at(index, value);
 
-        Ok(NodeId { index })
+        Ok(NodeId::new(index))
     }
 }
 
