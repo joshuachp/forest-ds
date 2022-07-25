@@ -11,14 +11,14 @@ impl<T> Tree<T> {
         prev_sibling_index: Option<usize>,
         next_sibling_index: Option<usize>,
     ) {
-        let node = &mut self.nodes[node_index];
+        let node = self.nodes[node_index].unwrap_mut();
         node.parent = parent_index;
         node.prev_sibling = prev_sibling_index;
         node.next_sibling = next_sibling_index;
 
         // If the parent doesn't have children set the node as first and last
         if let Some(parent_index) = parent_index {
-            let parent = &mut self.nodes[parent_index];
+            let parent = self.nodes[parent_index].unwrap_mut();
 
             if prev_sibling_index.is_none() {
                 parent.first_child = Some(node_index);
@@ -30,7 +30,7 @@ impl<T> Tree<T> {
         }
 
         if let Some(prev_sibling_index) = prev_sibling_index {
-            let prev_sibling = &mut self.nodes[prev_sibling_index];
+            let prev_sibling = self.nodes[prev_sibling_index].unwrap_mut();
 
             debug_assert!(prev_sibling.next_sibling.is_none());
             debug_assert_eq!(prev_sibling.parent, parent_index);
@@ -39,7 +39,7 @@ impl<T> Tree<T> {
         }
 
         if let Some(next_sibling_index) = next_sibling_index {
-            let next_sibling = &mut self.nodes[next_sibling_index];
+            let next_sibling = self.nodes[next_sibling_index].unwrap_mut();
 
             debug_assert!(next_sibling.prev_sibling.is_none());
             debug_assert_eq!(next_sibling.parent, parent_index);
@@ -64,10 +64,10 @@ impl<T> Tree<T> {
 
         // TODO: search if the child has the parent as child
 
-        let parent_node = &self.nodes[parent_index];
+        let parent_node = self.nodes[parent_index].unwrap_ref();
         let last_child = parent_node.last_child;
 
-        self.relate(child_index, Some(parent.index), last_child, None);
+        self.relate(child_index, Some(parent_index), last_child, None);
 
         Ok(())
     }

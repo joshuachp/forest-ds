@@ -9,7 +9,7 @@ use crate::{id::NodeId, tree::Tree};
 /// - `Err`: the previous unmodified cursor
 #[derive(Debug)]
 pub struct Cursor<'a, T> {
-    index: usize,
+    pub(crate) index: usize,
     tree: &'a mut Tree<T>,
 }
 
@@ -28,16 +28,28 @@ impl<T> Tree<T> {
 }
 
 impl<T> Cursor<'_, T> {
+    #[must_use]
+    pub fn id(&self) -> NodeId {
+        NodeId::new(self.index)
+    }
+
+    #[must_use]
     pub fn get(&self) -> &T {
-        &self.tree.nodes[self.index].value
+        &self.tree.nodes[self.index].unwrap_ref().value
     }
 
+    #[must_use]
     pub fn get_mut(&mut self) -> &mut T {
-        &mut self.tree.nodes[self.index].value
+        &mut self.tree.nodes[self.index].unwrap_mut().value
     }
 
+    /// Move the cursor to the parent
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn parent(&mut self) -> Result<&mut Self, &mut Self> {
-        match self.tree.nodes[self.index].parent {
+        match self.tree.nodes[self.index].unwrap_ref().parent {
             Some(index) => {
                 self.index = index;
                 Ok(self)
@@ -46,8 +58,13 @@ impl<T> Cursor<'_, T> {
         }
     }
 
+    /// Move the cursor to the first child
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn first_child(&mut self) -> Result<&mut Self, &mut Self> {
-        match self.tree.nodes[self.index].first_child {
+        match self.tree.nodes[self.index].unwrap_ref().first_child {
             Some(index) => {
                 self.index = index;
                 Ok(self)
@@ -56,8 +73,13 @@ impl<T> Cursor<'_, T> {
         }
     }
 
+    /// Move the cursor to the last child
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn last_child(&mut self) -> Result<&mut Self, &mut Self> {
-        match self.tree.nodes[self.index].last_child {
+        match self.tree.nodes[self.index].unwrap_ref().last_child {
             Some(index) => {
                 self.index = index;
                 Ok(self)
@@ -66,8 +88,13 @@ impl<T> Cursor<'_, T> {
         }
     }
 
+    /// Move the cursor to the next sibling
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn next_sibling(&mut self) -> Result<&mut Self, &mut Self> {
-        match self.tree.nodes[self.index].next_sibling {
+        match self.tree.nodes[self.index].unwrap_ref().next_sibling {
             Some(index) => {
                 self.index = index;
                 Ok(self)
@@ -76,8 +103,13 @@ impl<T> Cursor<'_, T> {
         }
     }
 
+    /// Move the cursor to the prev sibling
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn prev_sibling(&mut self) -> Result<&mut Self, &mut Self> {
-        match self.tree.nodes[self.index].prev_sibling {
+        match self.tree.nodes[self.index].unwrap_ref().prev_sibling {
             Some(index) => {
                 self.index = index;
                 Ok(self)
@@ -86,15 +118,20 @@ impl<T> Cursor<'_, T> {
         }
     }
 
+    /// Move the cursor to the next node
+    ///
+    /// # Errors
+    ///
+    /// If there is no next node will return the previous position
     pub fn move_next(&mut self) -> Result<&mut Self, &mut Self> {
         self.first_child()
-            .or_else(|cursor| cursor.next_sibling())
+            .or_else(Cursor::next_sibling)
             .or_else(|cursor| {
-                let mut parent = &cursor.tree.nodes[cursor.index].parent;
+                let mut parent = &cursor.tree.nodes[cursor.index].unwrap_ref().parent;
 
                 // Iterate to each parent to check if one has a next sibling
                 while let Some(parent_index) = parent {
-                    let node = &cursor.tree.nodes[*parent_index];
+                    let node = cursor.tree.nodes[*parent_index].unwrap_ref();
 
                     if let Some(sibling) = node.next_sibling {
                         cursor.index = sibling;
@@ -110,15 +147,15 @@ impl<T> Cursor<'_, T> {
     }
 
     pub fn append_child(&mut self, value: T) -> NodeId {
-        NodeId {
-            index: self.tree.insert_child_at(self.index, value),
-        }
+        let index = self.tree.insert_child_at(self.index, value);
+
+        NodeId::new(index)
     }
 
     pub fn append_sibling(&mut self, value: T) -> NodeId {
-        NodeId {
-            index: self.tree.insert_sibling_at(self.index, value),
-        }
+        let index = self.tree.insert_sibling_at(self.index, value);
+
+        NodeId::new(index)
     }
 }
 

@@ -1,5 +1,5 @@
 /// Implements iteration over a tree
-use crate::{id::NodeId, node::Node, tree::Tree};
+use crate::{entry::Entry, id::NodeId, node::Node, tree::Tree};
 
 impl<T> Tree<T> {
     #[must_use]
@@ -25,13 +25,16 @@ impl<T> Tree<T> {
             nodes: self
                 .nodes
                 .iter_mut()
-                .map(|node| Node {
-                    value: Some(&mut node.value),
-                    parent: node.parent,
-                    first_child: node.first_child,
-                    last_child: node.last_child,
-                    next_sibling: node.next_sibling,
-                    prev_sibling: node.prev_sibling,
+                .filter_map(|entry| match entry {
+                    Entry::Free { .. } => None,
+                    Entry::Occupied(node) => Some(Node {
+                        value: Some(&mut node.value),
+                        parent: node.parent,
+                        first_child: node.first_child,
+                        last_child: node.last_child,
+                        next_sibling: node.next_sibling,
+                        prev_sibling: node.prev_sibling,
+                    }),
                 })
                 .collect(),
         }
@@ -44,13 +47,16 @@ impl<T> Tree<T> {
             nodes: self
                 .nodes
                 .into_iter()
-                .map(|node| Node {
-                    value: Some(node.value),
-                    parent: node.parent,
-                    first_child: node.first_child,
-                    last_child: node.last_child,
-                    next_sibling: node.next_sibling,
-                    prev_sibling: node.prev_sibling,
+                .filter_map(|entry| match entry {
+                    Entry::Free { .. } => None,
+                    Entry::Occupied(node) => Some(Node {
+                        value: Some(node.value),
+                        parent: node.parent,
+                        first_child: node.first_child,
+                        last_child: node.last_child,
+                        next_sibling: node.next_sibling,
+                        prev_sibling: node.prev_sibling,
+                    }),
                 })
                 .collect(),
         }
@@ -80,7 +86,7 @@ impl<T> IntoIterator for Tree<T> {
 #[derive(Debug)]
 pub struct Iter<'a, T> {
     current: Option<usize>,
-    nodes: &'a [Node<T>],
+    nodes: &'a [Entry<T>],
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
@@ -90,16 +96,16 @@ impl<'a, T> Iterator for Iter<'a, T> {
         self.current.take().map(|current| {
             let node = &self.nodes[current];
 
-            if let Some(child) = node.first_child {
+            if let Some(child) = node.unwrap_ref().first_child {
                 self.current = Some(child);
-            } else if let Some(sibling) = node.next_sibling {
+            } else if let Some(sibling) = node.unwrap_ref().next_sibling {
                 self.current = Some(sibling);
             } else {
                 // Start from the current node
-                let mut next = node;
+                let mut next = node.unwrap_ref();
                 // Cycle to the parent to search for the next sibling or go up the tree
                 while let Some(parent_index) = next.parent {
-                    next = &self.nodes[parent_index];
+                    next = self.nodes[parent_index].unwrap_ref();
                     if next.next_sibling.is_some() {
                         break;
                     }
@@ -109,7 +115,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
                 self.current = next.next_sibling;
             }
 
-            &node.value
+            &node.unwrap_ref().value
         })
     }
 }
