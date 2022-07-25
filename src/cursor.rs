@@ -157,6 +157,46 @@ impl<T> Cursor<'_, T> {
 
         NodeId::new(index)
     }
+
+    #[must_use]
+    pub fn peek_parent(&self) -> Option<&T> {
+        self.tree.nodes[self.index]
+            .unwrap_ref()
+            .parent
+            .and_then(|index| self.tree.nodes[index].map_ref(|node| &node.value))
+    }
+
+    #[must_use]
+    pub fn peek_next_sibling(&self) -> Option<&T> {
+        self.tree.nodes[self.index]
+            .unwrap_ref()
+            .next_sibling
+            .and_then(|index| self.tree.nodes[index].map_ref(|node| &node.value))
+    }
+
+    #[must_use]
+    pub fn peek_prev_sibling(&self) -> Option<&T> {
+        self.tree.nodes[self.index]
+            .unwrap_ref()
+            .prev_sibling
+            .and_then(|index| self.tree.nodes[index].map_ref(|node| &node.value))
+    }
+
+    #[must_use]
+    pub fn peek_first_child(&self) -> Option<&T> {
+        self.tree.nodes[self.index]
+            .unwrap_ref()
+            .first_child
+            .and_then(|index| self.tree.nodes[index].map_ref(|node| &node.value))
+    }
+
+    #[must_use]
+    pub fn peek_last_child(&self) -> Option<&T> {
+        self.tree.nodes[self.index]
+            .unwrap_ref()
+            .first_child
+            .and_then(|index| self.tree.nodes[index].map_ref(|node| &node.value))
+    }
 }
 
 #[cfg(test)]
