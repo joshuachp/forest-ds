@@ -71,4 +71,54 @@ impl<T> Tree<T> {
 
         Ok(())
     }
+
+    /// Make the `node` as the previous sibling of `sibling`
+    ///
+    /// # Errors
+    ///
+    /// - Fails of the same `NodeId` is passed
+    /// - TODO: Fail if the child node is parent of the parent node.
+    pub fn make_prev_siblings(&mut self, node: &NodeId, sibling: &NodeId) -> Result<(), Error> {
+        let node_index = self.index(node).ok_or(Error::Invalid("for node"))?;
+        let sibling_index = self.index(sibling).ok_or(Error::Invalid("for sibling"))?;
+
+        if node_index == sibling_index {
+            return Err(Error::SameNode);
+        }
+
+        // TODO: search if the child has the parent as child
+
+        let sibling_node = self.nodes[sibling_index].unwrap_ref();
+        let parent_index = sibling_node.parent;
+        let prev_sibling = sibling_node.prev_sibling;
+
+        self.relate(node_index, parent_index, prev_sibling, Some(sibling_index));
+
+        Ok(())
+    }
+
+    /// Make the `node` as the next sibling of `sibling`
+    ///
+    /// # Errors
+    ///
+    /// - Fails of the same `NodeId` is passed
+    /// - TODO: Fail if the child node is parent of the parent node.
+    pub fn make_next_siblings(&mut self, node: &NodeId, sibling: &NodeId) -> Result<(), Error> {
+        let node_index = self.index(node).ok_or(Error::Invalid("for node"))?;
+        let sibling_index = self.index(sibling).ok_or(Error::Invalid("for sibling"))?;
+
+        if node_index == sibling_index {
+            return Err(Error::SameNode);
+        }
+
+        // TODO: search if the child has the parent as child
+
+        let sibling_node = self.nodes[sibling_index].unwrap_ref();
+        let parent_index = sibling_node.parent;
+        let next_sibling = sibling_node.next_sibling;
+
+        self.relate(node_index, parent_index, Some(sibling_index), next_sibling);
+
+        Ok(())
+    }
 }
