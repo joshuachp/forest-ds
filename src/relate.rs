@@ -121,4 +121,46 @@ impl<T> Tree<T> {
 
         Ok(())
     }
+
+    /// Detach the node from it's parent
+    ///
+    /// # Errors
+    ///
+    /// - Fails of the `node` was removed
+    pub fn detach(&mut self, node: &NodeId) -> Result<(), Error> {
+        let node_index = self.index(node).ok_or(Error::Invalid("for node"))?;
+        let node = self.nodes[node_index].unwrap_mut();
+
+        let parent = node.parent;
+        let prev_sibling = node.prev_sibling;
+        let next_sibling = node.next_sibling;
+
+        node.parent = None;
+
+        if let Some(parent_index) = parent {
+            let parent = self.nodes[parent_index].unwrap_mut();
+
+            if parent.last_child == Some(node_index) {
+                parent.last_child = prev_sibling;
+            }
+
+            if parent.first_child == Some(node_index) {
+                parent.last_child = next_sibling;
+            }
+        }
+
+        if let Some(next_sibling_index) = next_sibling {
+            let next = self.nodes[next_sibling_index].unwrap_mut();
+
+            next.prev_sibling = prev_sibling;
+        }
+
+        if let Some(prev_sibling_index) = prev_sibling {
+            let prev = self.nodes[prev_sibling_index].unwrap_mut();
+
+            prev.next_sibling = next_sibling;
+        }
+
+        Ok(())
+    }
 }
