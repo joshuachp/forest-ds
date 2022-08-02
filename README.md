@@ -11,5 +11,4 @@ Implemented features:
 
 Missing features:
 
-- Removal of a node
 - Parallel iteration with `rayon`
