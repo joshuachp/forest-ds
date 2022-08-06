@@ -41,6 +41,14 @@ impl<T> Tree<T> {
 
             let node = entry.unwrap();
 
+            if Some(index) == self.first_node {
+                self.first_node = node.next_sibling.or(node.parent)
+            }
+
+            if Some(index) == self.last_node {
+                self.last_node = node.prev_sibling.or(node.parent)
+            }
+
             if let Some(parent_index) = node.parent {
                 let parent = self.nodes[parent_index].unwrap_mut();
 
@@ -98,7 +106,7 @@ impl<T> Tree<T> {
 
     #[must_use]
     pub fn last_node_id(&self) -> Option<NodeId> {
-        self.first_node.map(NodeId::new)
+        self.last_node.map(NodeId::new)
     }
 
     /// Insert the last child for a given index.
@@ -397,7 +405,8 @@ mod test {
         tree.append_child(4);
 
         assert_eq!(Some(2), tree.remove(id));
+
         assert_eq!(1, *tree.get(&tree.first_node_id().unwrap()).unwrap());
-        assert_eq!(1, *tree.get(&tree.last_node_id().unwrap()).unwrap());
+        assert_eq!(4, *tree.get(&tree.last_node_id().unwrap()).unwrap());
     }
 }

@@ -69,6 +69,15 @@ impl<T> Tree<T> {
 
         self.relate(child_index, Some(parent_index), last_child, None);
 
+        if Some(parent_index) == self.last_node {
+            let mut cursor = self.cursor(child).unwrap();
+
+            while cursor.move_next().is_ok() {}
+
+            let id = &cursor.id();
+            self.last_node = self.index(id);
+        }
+
         Ok(())
     }
 
@@ -94,6 +103,10 @@ impl<T> Tree<T> {
 
         self.relate(node_index, parent_index, prev_sibling, Some(sibling_index));
 
+        if Some(sibling_index) == self.first_node {
+            self.first_node = Some(node_index);
+        }
+
         Ok(())
     }
 
@@ -118,6 +131,10 @@ impl<T> Tree<T> {
         let next_sibling = sibling_node.next_sibling;
 
         self.relate(node_index, parent_index, Some(sibling_index), next_sibling);
+
+        if Some(sibling_index) == self.last_node {
+            self.last_node = Some(node_index);
+        }
 
         Ok(())
     }
@@ -162,5 +179,60 @@ impl<T> Tree<T> {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tree::Tree;
+
+    #[test]
+    fn should_update_last_node_make_child() {
+        let mut tree = Tree::new();
+
+        let parent = tree.append_child(1);
+
+        let node = tree.create_node(2);
+
+        assert_eq!(Some(parent), tree.first_node_id());
+        assert_eq!(Some(parent), tree.last_node_id());
+
+        tree.make_child(&node, &parent).unwrap();
+
+        assert_eq!(Some(parent), tree.first_node_id());
+        assert_eq!(Some(node), tree.last_node_id());
+    }
+
+    #[test]
+    fn should_update_first_node_make_sibling() {
+        let mut tree = Tree::new();
+
+        let sibling = tree.append_child(1);
+
+        let node = tree.create_node(2);
+
+        assert_eq!(Some(sibling), tree.first_node_id());
+        assert_eq!(Some(sibling), tree.last_node_id());
+
+        tree.make_prev_siblings(&node, &sibling).unwrap();
+
+        assert_eq!(Some(node), tree.first_node_id());
+        assert_eq!(Some(sibling), tree.last_node_id());
+    }
+
+    #[test]
+    fn should_update_last_node_make_sibling() {
+        let mut tree = Tree::new();
+
+        tree.append_child(1);
+        let sibling = tree.append_child(2);
+
+        let node = tree.create_node(3);
+
+        assert_eq!(Some(sibling), tree.last_node_id());
+
+        tree.make_next_siblings(&node, &sibling).unwrap();
+
+        assert_eq!(Some(node), tree.last_node_id());
     }
 }
