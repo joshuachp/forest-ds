@@ -29,26 +29,33 @@
     , ...
     }:
     let
-      eachDefaultSystemMap = flake-utils.lib.eachDefaultSystemMap;
+      supportedSystems = with flake-utils.lib.system; [
+        x86_64-linux
+        x86_64-darwin
+        aarch64-linux
+        aarch64-darwin
+      ];
+      eachSystemMap = flake-utils.lib.eachSystemMap supportedSystems;
     in
     rec {
-      packages = eachDefaultSystemMap (system:
+      packages = eachSystemMap (system:
         let
           naersk-lib = naersk.lib.${system};
           fenix-pkg = fenix.packages.${system}.stable;
         in
         {
-          default =
-            (naersk-lib.override {
-              inherit (fenix-pkg) cargo rustc;
-            }).buildPackage { root = ./.; };
+          default = (naersk-lib.override {
+            inherit (fenix-pkg) cargo rustc;
+          }).buildPackage { root = ./.; };
         });
-      apps = eachDefaultSystemMap (system: {
+
+      apps = eachSystemMap (system: {
         default = flake-utils.lib.mkApp {
           drv = packages.${system}.default;
         };
       });
-      devShells = eachDefaultSystemMap (system:
+
+      devShells = eachSystemMap (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           fenix-pkg = fenix.packages.${system}.stable;
