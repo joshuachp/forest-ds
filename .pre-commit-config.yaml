@@ -9,7 +9,7 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/joshuachp/pre-commit-hooks
-    rev: 0.1.16
+    rev: 0.1.17
     hooks:
       - id: rust-fmt
       - id: rust-test
