@@ -33,9 +33,9 @@ impl<T: Serialize> Serialize for Tree<T> {
     {
         let mut sequence = serializer.serialize_seq(None)?;
 
-        let mut current_index = self.root;
+        let mut current_index = self.first_node;
         while let Some(index) = current_index {
-            let node = &self.nodes[index];
+            let node = self.nodes[index].unwrap_ref();
 
             sequence.serialize_element(&NodeSerialize::Node { tree: self, node })?;
 
@@ -71,7 +71,7 @@ impl<'a, T: Serialize> Serialize for NodeSerialize<'a, T> {
 
                 let mut current_index = *index;
                 while let Some(index) = current_index {
-                    let node = &tree.nodes[index];
+                    let node = tree.nodes[index].unwrap_ref();
 
                     sequence.serialize_element(&NodeSerialize::Node { tree, node })?;
 
