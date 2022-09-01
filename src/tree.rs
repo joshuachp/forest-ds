@@ -42,7 +42,7 @@ impl<T> Tree<T> {
             let node = entry.unwrap();
 
             if Some(index) == self.first_node {
-                self.first_node = node.next_sibling.or(node.parent)
+                self.first_node = node.next_sibling.or(node.first_child)
             }
 
             if Some(index) == self.last_node {
