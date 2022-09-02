@@ -34,6 +34,10 @@ impl<T> Tree<T> {
     }
 
     /// Remove the node
+    ///
+    /// # Errors
+    ///
+    /// Fails if the [`NodeId`] is invalid.
     pub fn remove(&mut self, id: NodeId) -> Result<T, Error> {
         let index = self.index(&id).ok_or(Error::Invalid("passed"))?;
         let entry = self.free_node(index);
@@ -42,12 +46,12 @@ impl<T> Tree<T> {
 
         // Replace with next sibling or first child, there is no previous sibling
         if Some(index) == self.first_node {
-            self.first_node = node.next_sibling.or(node.first_child)
+            self.first_node = node.next_sibling.or(node.first_child);
         }
 
         // Replace with prev sibling or parent, there is no next sibling
         if Some(index) == self.last_node {
-            self.last_node = node.prev_sibling.or(node.parent)
+            self.last_node = node.prev_sibling.or(node.parent);
         }
 
         // Check if this is a parent first/last child
