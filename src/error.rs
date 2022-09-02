@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, thiserror::Error)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
     // Index
     #[error("invalid node id {0}")]
