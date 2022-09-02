@@ -41,14 +41,17 @@ impl<T> Tree<T> {
 
             let node = entry.unwrap();
 
+            // Replace with next sibling or first child, there is no previous sibling
             if Some(index) == self.first_node {
                 self.first_node = node.next_sibling.or(node.first_child)
             }
 
+            // Replace with prev sibling or parent, there is no next sibling
             if Some(index) == self.last_node {
                 self.last_node = node.prev_sibling.or(node.parent)
             }
 
+            // Check if this is a parent first/last child
             if let Some(parent_index) = node.parent {
                 let parent = self.nodes[parent_index].unwrap_mut();
 
@@ -61,6 +64,7 @@ impl<T> Tree<T> {
                 }
             }
 
+            // Connect next sibling with previous sibling
             if let Some(index) = node.next_sibling {
                 let next_sibling = self.nodes[index].unwrap_mut();
                 next_sibling.prev_sibling = node.prev_sibling;
@@ -69,30 +73,6 @@ impl<T> Tree<T> {
             if let Some(index) = node.prev_sibling {
                 let prev_sibling = self.nodes[index].unwrap_mut();
                 prev_sibling.next_sibling = node.next_sibling;
-            }
-
-            if let Some(index) = node.first_child {
-                let mut children = vec![index];
-
-                let mut cursor = self.cursor(&NodeId::new(index)).unwrap();
-
-                while cursor.next_sibling().is_ok() {
-                    children.push(cursor.index);
-                }
-
-                while let Some(index) = children.pop() {
-                    let mut cursor = self.cursor(&NodeId::new(index)).unwrap();
-
-                    if cursor.first_child().is_ok() {
-                        children.push(cursor.index);
-
-                        while cursor.next_sibling().is_ok() {
-                            children.push(cursor.index);
-                        }
-                    }
-
-                    self.free_node(index);
-                }
             }
 
             node.value
