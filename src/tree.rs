@@ -33,7 +33,12 @@ impl<T> Tree<T> {
         NodeId::new(index)
     }
 
-    /// Remove the node
+    /// Remove a node.
+    ///
+    /// If there are some children nodes, they will became the first node if we are removing the
+    /// first node. Otherwise they will become orphan nodes.
+    ///
+    /// It will consume the [`NodeId`].
     ///
     /// # Errors
     ///
@@ -76,6 +81,15 @@ impl<T> Tree<T> {
         if let Some(index) = node.prev_sibling {
             let prev_sibling = self.nodes[index].unwrap_mut();
             prev_sibling.next_sibling = node.next_sibling;
+        }
+
+        // Remove parent from child nodes
+        let mut child_index = node.first_child;
+        while let Some(index) = child_index {
+            let child = self.nodes[index].unwrap_mut();
+            child.parent = None;
+
+            child_index = child.next_sibling;
         }
 
         Ok(node.value)
@@ -388,7 +402,38 @@ mod test {
 
         assert_eq!(Ok(2), tree.remove(id));
 
+        assert_eq!(Some(1), tree.first_free);
+        assert_eq!(Some(0), tree.first_node);
+
+        assert_eq!(Entry::Free { next_free: None }, tree.nodes[1]);
+
+        assert_eq!(None, tree.nodes[2].unwrap_ref().prev_sibling);
+
         assert_eq!(1, *tree.get(&tree.first_node_id().unwrap()).unwrap());
+        assert_eq!(4, *tree.get(&tree.last_node_id().unwrap()).unwrap());
+    }
+
+    #[test]
+    fn should_remove_first_node() {
+        let mut tree = Tree::new();
+
+        let id = tree.append_child(1);
+
+        tree.append_child(2);
+        tree.append_sibling(3);
+        tree.append_child(4);
+
+        assert_eq!(Ok(1), tree.remove(id));
+
+        assert_eq!(Some(0), tree.first_free);
+        assert_eq!(Some(1), tree.first_node);
+
+        assert_eq!(Entry::Free { next_free: None }, tree.nodes[0]);
+
+        assert_eq!(None, tree.nodes[1].unwrap_ref().parent);
+        assert_eq!(None, tree.nodes[2].unwrap_ref().parent);
+
+        assert_eq!(2, *tree.get(&tree.first_node_id().unwrap()).unwrap());
         assert_eq!(4, *tree.get(&tree.last_node_id().unwrap()).unwrap());
     }
 }
