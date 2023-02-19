@@ -11,14 +11,7 @@
       url = "github:nmattia/naersk/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
+    flake-utils.url = "github:numtide/flake-utils";
   };
   outputs =
     { self
@@ -26,7 +19,6 @@
     , flake-utils
     , naersk
     , fenix
-    , ...
     }:
     let
       supportedSystems = with flake-utils.lib.system; [
