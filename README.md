@@ -1,11 +1,9 @@
 # forest-ds
 
-<a href="https://crates.io/crates/forest-ds">
-    <img alt="Crates.io" src="https://img.shields.io/crates/v/forest-ds">
-</a>
-<a href="https://docs.rs/forest-ds">
-    <img alt="docs.rs" src="https://img.shields.io/docsrs/forest-ds">
-</a>
+[![Crates.io](https://img.shields.io/crates/v/forest-ds)](https://crates.io/crates/forest-ds)
+[![docs.rs](https://img.shields.io/docsrs/forest-ds)](https://docs.rs/forest-ds/)
+[![CI](https://github.com/github/joshuachp/forest-ds/workflows/test.yml/badge.svg)](https://github.com/joshuachp/forest-ds/blob/main/.github/workflows/test.yml)
+[![codecov](https://codecov.io/gh/joshuachp/forest-ds/branch/main/graph/badge.svg?token=KYDH1J83U9)](https://codecov.io/gh/joshuachp/forest-ds)
 
 Implementation an arena based Tree structure.
 
