@@ -38,13 +38,32 @@
         };
         default = packages.forest-ds;
       };
-      devShells.default = pkgs.mkShell {
-        inputsFrom = [
-          packages.forest-ds
-        ];
-        packages = with pkgs; [
-          pre-commit
-        ];
+      devShells = {
+        default = pkgs.mkShell {
+          inputsFrom = [
+            packages.forest-ds
+          ];
+          packages = with pkgs; [
+            pre-commit
+          ];
+        };
+        nightly =
+          let
+            toolchain = (fenix.packages.${system}.latest);
+          in
+          pkgs.mkShell {
+            inputsFrom = [
+              packages.forest-ds
+            ];
+            packages = with pkgs; [
+              pre-commit
+              toolchain.rustc
+              toolchain.cargo
+              toolchain.rust-analyzer
+              toolchain.clippy
+              toolchain.rustfmt
+            ];
+          };
       };
     });
 }
