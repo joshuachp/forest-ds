@@ -1,12 +1,13 @@
 #![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
 
-pub mod cursor;
-pub mod entry;
+mod arena;
 pub mod error;
-pub mod id;
-pub mod iter;
+pub mod index;
 pub mod node;
-pub mod relate;
+mod relation;
 #[cfg(feature = "serde")]
 pub mod serde;
 pub mod tree;
+
+pub use tree::Tree;

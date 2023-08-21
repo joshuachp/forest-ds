@@ -41,7 +41,7 @@
       devShells = {
         default =
           let
-            toolchain = (fenix.packages.${system}.latest);
+            inherit (fenix.packages.${system}.default) toolchain;
           in
           pkgs.mkShell {
             inputsFrom = [
@@ -49,11 +49,7 @@
             ];
             packages = with pkgs; [
               pre-commit
-              toolchain.rustc
-              toolchain.cargo
-              toolchain.rust-analyzer
-              toolchain.clippy
-              toolchain.rustfmt
+              toolchain
             ];
           };
       };

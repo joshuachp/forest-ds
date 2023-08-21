@@ -1,7 +1,16 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Node<T> {
-    pub(crate) value: T,
+//! Node inside the tree.
 
+use std::{
+    borrow::{Borrow, BorrowMut},
+    ops::{Deref, DerefMut},
+};
+
+use crate::index::NodeIdx;
+
+/// Node value in the [`crate::Tree`].
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Node<T> {
+    pub(crate) value: T,
     pub(crate) parent: Option<usize>,
     pub(crate) prev_sibling: Option<usize>,
     pub(crate) next_sibling: Option<usize>,
@@ -20,17 +29,66 @@ impl<T> Node<T> {
             last_child: None,
         }
     }
+
+    /// Get the index for the parent node.
+    pub fn parent(&self) -> Option<NodeIdx> {
+        self.parent.map(NodeIdx::new)
+    }
+
+    /// Get the index for the previous sibling node.
+    pub fn prev_sibling(&self) -> Option<NodeIdx> {
+        self.prev_sibling.map(NodeIdx::new)
+    }
+
+    /// Get the index for the next sibling node.
+    pub fn next_sibling(&self) -> Option<NodeIdx> {
+        self.next_sibling.map(NodeIdx::new)
+    }
+
+    /// Get the index for the first child node.
+    pub fn first_child(&self) -> Option<NodeIdx> {
+        self.first_child.map(NodeIdx::new)
+    }
+
+    /// Get the index for the last child node.
+    pub fn last_child(&self) -> Option<NodeIdx> {
+        self.last_child.map(NodeIdx::new)
+    }
 }
 
-impl<T: Default> Default for Node<T> {
-    fn default() -> Self {
-        Self {
-            value: Default::default(),
-            parent: Option::default(),
-            prev_sibling: Option::default(),
-            next_sibling: Option::default(),
-            first_child: Option::default(),
-            last_child: Option::default(),
-        }
+impl<T> AsRef<T> for Node<T> {
+    fn as_ref(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T> AsMut<T> for Node<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
+}
+
+impl<T> Borrow<T> for Node<T> {
+    fn borrow(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T> BorrowMut<T> for Node<T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
+}
+
+impl<T> Deref for Node<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+impl<T> DerefMut for Node<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
     }
 }

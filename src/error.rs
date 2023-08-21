@@ -1,9 +1,10 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+//! Errors returned by the operations on the [`crate::tree::Tree`].
+
+use crate::relation::RelationError;
+
+/// Errors returned by the tree operations.
+#[derive(Debug, Clone, Copy, thiserror::Error, displaydoc::Display)]
 pub enum Error {
-    // Index
-    #[error("invalid node id {0}")]
-    Invalid(&'static str),
-    // Relations
-    #[error("same node id provided")]
-    SameNode,
+    /// couldn't relate nodes
+    Relation(#[from] RelationError),
 }
