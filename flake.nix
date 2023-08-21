@@ -39,15 +39,7 @@
         default = packages.forest-ds;
       };
       devShells = {
-        default = pkgs.mkShell {
-          inputsFrom = [
-            packages.forest-ds
-          ];
-          packages = with pkgs; [
-            pre-commit
-          ];
-        };
-        nightly =
+        default =
           let
             toolchain = (fenix.packages.${system}.latest);
           in
