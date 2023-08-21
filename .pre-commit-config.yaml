@@ -10,7 +10,7 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
   - repo: https://github.com/joshuachp/pre-commit-hooks
-    rev: 0.1.29
+    rev: 0.1.30
     hooks:
       - id: rust-fmt
       - id: rust-clippy
