@@ -1,6 +1,6 @@
 [package]
 name = "forest-ds"
-version = "1.1.6"
+version = "1.1.7"
 categories = ["data-structures"]
 edition = "2021"
 keywords = ["data-structures", "trees"]
