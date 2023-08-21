@@ -10,13 +10,13 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
   - repo: https://github.com/joshuachp/pre-commit-hooks
-    rev: 0.1.24
+    rev: 0.1.29
     hooks:
       - id: rust-fmt
-      - id: rust-build
       - id: rust-clippy
+      - id: rust-build
       - id: rust-test
-      - id: rust-test-doc
+      - id: rust-doc
       - id: rust-hack
       - id: nix-nixpkgs-fmt
       - id: nix-flake-check
