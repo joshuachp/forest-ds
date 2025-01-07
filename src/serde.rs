@@ -46,7 +46,7 @@ impl<T: Serialize> Serialize for Tree<T> {
     }
 }
 
-impl<'a, T: Serialize> Serialize for NodeSerialize<'a, T> {
+impl<T: Serialize> Serialize for NodeSerialize<'_, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
